@@ -1,18 +1,27 @@
 #!/bin/bash
 
+# Original list of needed binaries
+# NEEDED_BINARIES=(
+#   soda-opt
+#   soda-translate
+#   mlir-opt
+#   mlir-translate
+#   flatbuffer_translate
+#   tf-mlir-translate
+#   tf-opt
+#   torch-mlir-opt
+#   bambu
+#   openroad
+#   yosys
+# )
+
 # list of needed binaries
 NEEDED_BINARIES=(
   soda-opt
   soda-translate
   mlir-opt
   mlir-translate
-  flatbuffer_translate
-  tf-mlir-translate
-  tf-opt
-  torch-mlir-opt
   bambu
-  openroad
-  yosys
 )
 
 DOCKER_RUN="docker run -u $(id -u):$(id -g) -v $(pwd):$(pwd) -w $(pwd) --rm agostini01/soda"
