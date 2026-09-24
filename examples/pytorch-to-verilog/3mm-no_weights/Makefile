@@ -19,6 +19,11 @@ ODIR=output
 TARGET=$(ODIR)/bambu/transformed/06_verilog.v
 # TARGET=$(ODIR)/bambu/transformed/07_results.txt # For simulation results
 
+# bambu v2023.1 via llvm-cbe, for its pure-Verilog (non-DPI) testbench.
+# Local tools only; see scripts/mkinc/llvm_to_verilog_bambu2023.mk.
+# TARGET=$(ODIR)/bambu2023/transformed/06_verilog.v
+# TARGET=$(ODIR)/bambu2023/transformed/07_results.txt # For simulation results
+
 
 all: $(TARGET)
 
@@ -43,3 +48,4 @@ BAMBU_DEVICE=asap7-BC
 # BAMBU_DEVICE=nangate45
 BAMBU_CLOCK_PERIOD=5
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
+include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_bambu2023.mk
