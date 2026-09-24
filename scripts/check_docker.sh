@@ -28,12 +28,12 @@ DOCKER_RUN="docker run -u $(id -u):$(id -g) -v $(pwd):$(pwd) -w $(pwd) --rm agos
 if ! command -v docker &> /dev/null; then
   DOCKER_RUN=""
   
-  # Loop over all needed binaries and check if they are available
+  # Loop over all needed binaries and check if they are available.
+  # This file is sourced, so exiting here also stops the calling script.
   for binary in "${NEEDED_BINARIES[@]}"; do
     if ! command -v $binary &> /dev/null; then
-      echo "WARNING: The docker binary could not be found. Verifying if all needed binaries are available locally..."
-      echo "ERROR: $binary could not be found. Exiting."
-      exit
+      echo "ERROR: docker was not found and $binary is not available locally. Exiting." >&2
+      exit 1
     fi
   done
   # echo "SUCCESS: All needed binaries are available locally."
