@@ -7,10 +7,14 @@
 #
 #   $(ODIR)/bambu2023/<strategy>/06_verilog.v    Verilog + testbench
 #   $(ODIR)/bambu2023/<strategy>/07_results.txt  also simulate with Verilator
+#   $(ODIR)/bambu2023/<strategy>/08_sst_results.txt
+#                                  run the testbench under SST via verilator-sst
 #
 # Local tools only (no docker). Override on the command line or environment:
 #   BAMBU2023  bambu v2023.1 binary     LLVM_CBE  llvm-cbe binary
 #   XML_ARGS   extra testbench_to_xml.py flags (e.g. --seed 7 --outputs 4)
+#   VERILATOR_SST_SRC  verilator-sst checkout     SST  sst binary
+#   SST_CYCLES         clock cycles for the SST run (see verilator_sst_bambu2023.sh)
 #
 # Uses BAMBU_DEVICE, BAMBU_CLOCK_PERIOD and BAMBU_MEMPOLICY like
 # llvm_to_verilog.mk.
@@ -36,6 +40,14 @@ $(ODIR)/bambu2023/%/07_results.txt: $(ODIR)/bambu2023/%/05_kernel.c $(ODIR)/bamb
 	BAMBU_RUN_SIMULATION=true \
 	$(BAMBU2023_SETTINGS) \
 	$(SCRIPTS_DIR)/c_to_verilog_bambu2023.sh $^ $@
+
+# The testbench is generated with the Verilog, so no bambu simulation is
+# needed first; if 07_results.txt exists, its cycle count sizes the SST run.
+$(ODIR)/bambu2023/%/08_sst_results.txt: $(ODIR)/bambu2023/%/06_verilog.v $(SCRIPTS_DIR)/verilator_sst_bambu2023.sh $(SCRIPTS_DIR)/verilator_sst_bambu2023_tb.py
+	VERILATOR_SST_SRC=$(VERILATOR_SST_SRC) \
+	SST=$(or $(SST),sst) \
+	SST_CYCLES=$(SST_CYCLES) \
+	$(SCRIPTS_DIR)/verilator_sst_bambu2023.sh $< $@
 
 # Keep the C translation and test vector; make would otherwise delete them as
 # intermediates of the pattern rules above.

@@ -23,6 +23,7 @@ TARGET=$(ODIR)/bambu/transformed/06_verilog.v
 # Local tools only; see scripts/mkinc/llvm_to_verilog_bambu2023.mk.
 # TARGET=$(ODIR)/bambu2023/transformed/06_verilog.v
 # TARGET=$(ODIR)/bambu2023/transformed/07_results.txt # For simulation results
+# TARGET=$(ODIR)/bambu2023/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
 
 
 all: $(TARGET)

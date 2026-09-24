@@ -33,7 +33,7 @@ The scripts that consume the LLVM IR produced above, one per `sb-cli --backend`.
 See [docs/ESPBackend.md](../docs/ESPBackend.md) for the cpu and esp ones.
 
 * [ll_to_verilog.sh](ll_to_verilog.sh) - Synthesizes `<input.ll>` with Bambu (`--backend bambu`).
-* [ll_to_c_cbe.sh](ll_to_c_cbe.sh), [testbench_to_xml.py](testbench_to_xml.py), [c_to_verilog_bambu2023.sh](c_to_verilog_bambu2023.sh) - Translate `<input.ll>` to C with llvm-cbe and synthesize it with bambu v2023.1 for its pure-Verilog (non-DPI) testbench. Wired up in [mkinc/llvm_to_verilog_bambu2023.mk](mkinc/llvm_to_verilog_bambu2023.mk); see [examples/pytorch-to-verilog/3mm-no_weights](../examples/pytorch-to-verilog/3mm-no_weights/README.md).
+* [ll_to_c_cbe.sh](ll_to_c_cbe.sh), [testbench_to_xml.py](testbench_to_xml.py), [c_to_verilog_bambu2023.sh](c_to_verilog_bambu2023.sh) - Translate `<input.ll>` to C with llvm-cbe and synthesize it with bambu v2023.1 for its pure-Verilog (non-DPI) testbench. [verilator_sst_bambu2023.sh](verilator_sst_bambu2023.sh) with [verilator_sst_bambu2023_tb.py](verilator_sst_bambu2023_tb.py) then runs that testbench under SST via verilator-sst. Wired up in [mkinc/llvm_to_verilog_bambu2023.mk](mkinc/llvm_to_verilog_bambu2023.mk); see [examples/pytorch-to-verilog/3mm-no_weights](../examples/pytorch-to-verilog/3mm-no_weights/README.md).
 * [ll_to_binary.sh](ll_to_binary.sh) - Links `<input.ll>` into a native executable (`--backend cpu`).
 * [ll_to_riscv.sh](ll_to_riscv.sh) - Cross-compiles `<input.ll>` for an ESP SoC's RISC-V core and stages a baremetal application (`--backend esp`).
 * [link_esp_app.sh](link_esp_app.sh) - Finishes that application's link inside an ESP checkout.

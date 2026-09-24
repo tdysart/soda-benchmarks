@@ -34,7 +34,9 @@ The `<strategy>` can be either `baseline` or `optimized`, and is determined by t
         ├── test.xml           // bambu XML test vector
         ├── 06_verilog.v
         ├── 07_results.txt     // simulated cycle count
-        └── HLS_output/simulation/testbench_forward_kernel_tb.v
+        ├── HLS_output/simulation/testbench_forward_kernel_tb.v
+        ├── 08_sst_results.txt // same, from the run under SST
+        └── verilator-sst/     // staged Verilog, verilator-sst build, sst-run.log
 ```
 
 
@@ -73,3 +75,30 @@ simulated outputs against a host run of the same C.
 
 The generated testbench opens `values.txt` and `results.txt` by absolute path,
 so update those `$fopen` calls if you move it.
+
+
+## Running the testbench under SST
+
+The testbench's top module has a single port, `clock`, so verilator-sst can
+drive it directly. `08_sst_results.txt` builds it into a verilator-sst
+component and runs it under SST. It needs:
+
+* a verilator-sst checkout with custom-module and link-handling support
+  (branch `feature/mdpi-testbench-support` of
+  `tactcomplabs/verilator-sst`), passed as `VERILATOR_SST_SRC`
+* the `sst` binary, passed as `SST`. `sst-config` must be in the same
+  directory.
+
+```sh
+make output/bambu2023/transformed/08_sst_results.txt \
+  BAMBU2023=/path/to/panda-2023/install/bin/bambu \
+  LLVM_CBE=/path/to/llvm-cbe/build/tools/llvm-cbe/llvm-cbe \
+  VERILATOR_SST_SRC=/path/to/verilator-sst \
+  SST=/path/to/sst-install/bin/sst
+```
+
+The run fails if the testbench reports a mismatch or doesn't finish.
+By default it runs bambu's simulated cycle count plus 10% (from
+`07_results.txt` if you built it), or 40000 cycles; set `SST_CYCLES` to
+override. The SST configuration is
+[verilator_sst_bambu2023_tb.py](../../../scripts/verilator_sst_bambu2023_tb.py).
