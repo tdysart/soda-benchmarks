@@ -1,0 +1,31 @@
+diff --git a/tools/llvm-cbe/CMakeLists.txt b/tools/llvm-cbe/CMakeLists.txt
+index a1a4fb9..5eb6da5 100644
+--- a/tools/llvm-cbe/CMakeLists.txt
++++ b/tools/llvm-cbe/CMakeLists.txt
+@@ -31,9 +31,23 @@ if(USE_SYSTEM_LLVM)
+   add_executable(llvm-cbe
+     llvm-cbe.cpp
+     )
++  # Local patch: link LLVM's static component libraries, since this LLVM
++  # install was built without the shared libLLVM dylib.
+   llvm_map_components_to_libnames(llvm_libs
+-    CBackendCodeGen
+-    CBackendInfo
++    ${LLVM_TARGETS_TO_BUILD}
++    Analysis
++    AsmParser
++    AsmPrinter
++    BitReader
++    CodeGen
++    Core
++    IRReader
++    MC
++    ScalarOpts
++    SelectionDAG
++    Support
++    Target
++    TransformUtils
+     )
+-  target_link_libraries(llvm-cbe LLVM ${llvm_libs})
++  target_link_libraries(llvm-cbe LLVMCBackendCodeGen LLVMCBackendInfo ${llvm_libs})
+ endif()

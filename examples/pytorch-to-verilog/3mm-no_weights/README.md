@@ -52,9 +52,12 @@ instead. This path uses local tools only, not the docker image:
 
 * `bambu` v2023.1, passed as `BAMBU2023`
 * `llvm-cbe` built against the same LLVM as soda-opt, passed as `LLVM_CBE`.
-  Commit `21569b994b` is the last one that targets LLVM 19.1.
+  Commit `21569b994b` is the last one that targets LLVM 19.1. Build it with
+  [setup-llvm-cbe.sh](../../../scripts/external/setup-llvm-cbe.sh).
 * torch-mlir, soda-opt, `mlir-opt`/`mlir-translate`/`opt` on `PATH` (and
-  torch-mlir's python package on `PYTHONPATH`) for the earlier steps
+  torch-mlir's python package on `PYTHONPATH`) for the earlier steps. For
+  LLVM 19.1, [setup-torch-mlir.sh](../../../scripts/external/setup-torch-mlir.sh)
+  builds a matching torch-mlir.
 
 ```sh
 make output/bambu2023/transformed/07_results.txt \
