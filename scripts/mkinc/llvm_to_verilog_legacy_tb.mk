@@ -11,12 +11,12 @@
 #   $(ODIR)/bambu-legacy/<strategy>/08_sst_results.txt
 #                                  run the testbench under SST via verilator-sst
 #
-# The test vector's expected outputs are computed by running
-# 05_llvm_<strategy>.ll on the host (compiled with llc), so the testbench
-# checks the hardware's results.
+# The test vector holds inputs only: bambu computes the expected outputs by
+# running 05_llvm_<strategy>.ll on the host, and the testbench checks the
+# hardware's results against them.
 #
 # Local tools only (no docker). Override on the command line or environment:
-#   BAMBU_LEGACY_TB  bambu with --testbench-style   LLC  llc for the host run
+#   BAMBU_LEGACY_TB  bambu with --testbench-style
 #   XML_ARGS   extra testbench_to_xml.py flags (e.g. --seed 7 --outputs 4)
 #   VERILATOR_SST_SRC  verilator-sst checkout     SST  sst binary
 #   SST_CYCLES         clock cycles for the SST run (see verilator_sst_bambu2023.sh)
@@ -35,9 +35,8 @@ BAMBU_LEGACY_TB_SETTINGS = \
 # writes architecture.xml, the C types of the kernel's pointer arguments.
 $(ODIR)/bambu-legacy/%/test.xml: $(ODIR)/05_llvm_%.ll $(SCRIPTS_DIR)/testbench_to_xml.py
 	mkdir -p $(@D)
-	LLC=$(or $(LLC),llc) \
 	python3 $(SCRIPTS_DIR)/testbench_to_xml.py $(ODIR)/forward_kernel_testbench.c -o $@ \
-	  --param-prefix P --param-base 0 --arch-xml $(@D)/architecture.xml --expected-from $< $(XML_ARGS)
+	  --param-prefix P --param-base 0 --arch-xml $(@D)/architecture.xml $(XML_ARGS)
 
 $(ODIR)/bambu-legacy/%/06_verilog.v: $(ODIR)/05_llvm_%.ll $(ODIR)/bambu-legacy/%/test.xml
 	$(BAMBU_LEGACY_TB_SETTINGS) \

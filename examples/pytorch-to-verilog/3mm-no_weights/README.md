@@ -112,24 +112,21 @@ front end reads soda-opt's IR, so the `bambu-legacy` targets need no llvm-cbe
 step. They need:
 
 * bambu built from that branch, passed as `BAMBU_LEGACY_TB`
-* `llc` from the same LLVM as soda-opt, passed as `LLC` (default: `llc` on
-  `PATH`)
 * for `08_sst_results.txt`, `VERILATOR_SST_SRC` and `SST` as above
 
 ```sh
 make output/bambu-legacy/transformed/08_sst_results.txt \
   BAMBU_LEGACY_TB=/path/to/PandA-bambu/obj/src/bambu \
-  LLC=/path/to/llvm/install/bin/llc \
   VERILATOR_SST_SRC=/path/to/verilator-sst \
   SST=/path/to/sst-install/bin/sst
 ```
 
-The legacy testbench doesn't compute expected outputs itself yet, so
-[testbench_to_xml.py](../../../scripts/testbench_to_xml.py) does. It compiles
-`05_llvm_<strategy>.ll` with `llc`, runs it on the random inputs, and writes
-the results into `test.xml` as `P<i>:output`. It also writes
-`architecture.xml`, passed to bambu as `--architecture-xml`, because opaque
-pointers leave the arguments' element types (`float*`) out of the IR.
+[testbench_to_xml.py](../../../scripts/testbench_to_xml.py) writes `test.xml`
+with inputs only; bambu runs `05_llvm_<strategy>.ll` on the host to get the
+expected outputs. It also writes `architecture.xml`, passed to bambu as
+`--architecture-xml`, because opaque pointers leave the arguments' element
+types (`float*`) out of the IR. (`testbench_to_xml.py --expected-from` can
+still put host-computed outputs into the XML, e.g. to cross-check bambu.)
 
 This testbench opens `HLS_output/simulation/values.txt` and `results.txt`
 relative to the output directory, so run it from there.

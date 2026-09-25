@@ -10,9 +10,10 @@
 # (c_to_verilog_bambu2023.sh) the IR needs no translation to C.
 #
 # <test.xml> and <architecture.xml> come from testbench_to_xml.py
-# (--param-prefix P --param-base 0 --arch-xml ... --expected-from ...). The
-# legacy testbench needs expected outputs in the XML, and, for IR input, the
-# C types of the pointer arguments, which opaque pointers leave out of the IR.
+# (--param-prefix P --param-base 0 --arch-xml ...). Without expected outputs
+# in the XML, bambu computes them by running <input.ll> on the host. For IR
+# input bambu needs the C types of the pointer arguments, which opaque
+# pointers leave out of the IR.
 #
 # Runs locally only (no docker). Outputs land next to <output.v>: bambu's
 # forward_kernel.v copied to 06_verilog.v, the testbench and values.txt under
