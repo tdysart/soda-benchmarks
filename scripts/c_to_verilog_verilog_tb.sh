@@ -1,19 +1,18 @@
 #!/bin/bash
-# Synthesize soda-opt's LLVM IR with bambu 2024 and generate the pure-Verilog
-# (non-DPI) testbench of --testbench-style=verilog from an XML test vector.
+# Synthesize a C kernel with bambu 2024 and generate the pure-Verilog (non-DPI)
+# testbench of --testbench-style=verilog from an XML test vector. The C-input
+# counterpart of ll_to_verilog_verilog_tb.sh.
 #
-# Usage: ll_to_verilog_verilog_tb.sh <input.ll> <test.xml> <architecture.xml> <output.v>
+# Usage: c_to_verilog_verilog_tb.sh <input.c> <test.xml> <output.v>
 #
 # --testbench-style is not in upstream bambu yet: it needs a bambu built from
-# branch feature/legacy-xml-testbench of tdysart/PandA-bambu. That testbench is
-# the one bambu v2023.1 generated, ported to 2024, so unlike the old bambu2023
-# flow (scripts/reference/bambu2023) the IR needs no translation to C.
+# branch feature/legacy-xml-testbench of tdysart/PandA-bambu.
 #
-# <test.xml> and <architecture.xml> come from testbench_to_xml.py
-# (--param-prefix P --param-base 0 --arch-xml ...). Without expected outputs
-# in the XML, bambu computes them by running <input.ll> on the host. For IR
-# input bambu needs the C types of the pointer arguments, which opaque
-# pointers leave out of the IR.
+# <test.xml> keys are the kernel's parameter names as bambu sees them, after
+# preprocessing (e.g. P0..P6 when the source #defines them). Without expected
+# outputs in the XML, bambu computes them by running <input.c> on the host.
+# Unlike IR input, C input needs no --architecture-xml: bambu's front end
+# records the parameters' C types itself.
 #
 # Runs locally only (no docker). Outputs land next to <output.v>: bambu's
 # forward_kernel.v copied to 06_verilog.v, the testbench and values.txt under
@@ -22,7 +21,7 @@
 #
 # Environment:
 #   BAMBU_VERILOG_TB      bambu with --testbench-style (default: bambu on PATH)
-#   BAMBU_DEVICE          (default: asap7-BC)
+#   BAMBU_DEVICE          (default: nangate45, as c_to_verilog.sh)
 #   BAMBU_CLOCK_PERIOD    (default: 5)
 #   BAMBU_MEMPOLICY       (default: NO_BRAM)
 #   BAMBU_RUN_SIMULATION  true to also simulate with Verilator (default: false)
@@ -31,13 +30,13 @@ set -e -o pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
-if [ "$#" -ne 4 ]; then
-  echo "Usage: $0 <input.ll> <test.xml> <architecture.xml> <output.v>" >&2
+if [ "$#" -ne 3 ]; then
+  echo "Usage: $0 <input.c> <test.xml> <output.v>" >&2
   exit 1
 fi
 
 BAMBU_VERILOG_TB="${BAMBU_VERILOG_TB:-bambu}"
-BAMBU_DEVICE="${BAMBU_DEVICE:-asap7-BC}"
+BAMBU_DEVICE="${BAMBU_DEVICE:-nangate45}"
 BAMBU_MEMPOLICY="${BAMBU_MEMPOLICY:-NO_BRAM}"
 BAMBU_CLOCK_PERIOD="${BAMBU_CLOCK_PERIOD:-5}"
 BAMBU_RUN_SIMULATION="${BAMBU_RUN_SIMULATION:-false}"
@@ -61,11 +60,10 @@ if [ "$(uname)" = "Darwin" ]; then
 fi
 
 TEST_XML="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
-ARCH_XML="$(cd "$(dirname "$3")" && pwd)/$(basename "$3")"
-OUTPUT_DIR=$(pwd)/$(dirname $4)
+OUTPUT_DIR=$(pwd)/$(dirname $3)
 mkdir -p $OUTPUT_DIR
 
-cp $1 $OUTPUT_DIR/input.ll
+cp $1 $OUTPUT_DIR/input.c
 pushd $OUTPUT_DIR
 
 SIMULATION_ARGS=""
@@ -82,12 +80,11 @@ fi
 	--channels-number=2 \
 	--memory-allocation-policy=$BAMBU_MEMPOLICY \
 	--disable-function-proxy \
-	--architecture-xml=$ARCH_XML \
 	--generate-tb=$TEST_XML \
 	--testbench-style=verilog \
 	$SIMULATION_ARGS \
 	--top-fname=forward_kernel \
-	input.ll 2>&1 | tee bambu-log
+	input.c 2>&1 | tee bambu-log
 
 cp forward_kernel.v 06_verilog.v
 

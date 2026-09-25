@@ -25,3 +25,27 @@ TARGET=$(ODIR)/bambu/baseline/07_results.txt
 ```
 
 Then run `make` again to execute the simulation which will verify the final verilog memory state against the memory state of a CPU execution of the C code. This will aslo provide a report on the number of cycles taken to execute the generated kernel.
+
+## Pure-Verilog testbench
+
+bambu's default testbench uses DPI-C. The `bambu-verilog-tb` targets instead
+generate a self-contained, pure-Verilog testbench (`--testbench-style=verilog`)
+that can run under verilator-sst. They use local tools, not the docker image:
+a bambu built from branch `feature/legacy-xml-testbench` of
+`tdysart/PandA-bambu`, passed as `BAMBU_VERILOG_TB`, and for the SST run a
+verilator-sst checkout (`VERILATOR_SST_SRC`) and the `sst` binary (`SST`).
+
+```sh
+make output/bambu-verilog-tb/baseline/08_sst_results.txt \
+  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu \
+  VERILATOR_SST_SRC=/path/to/verilator-sst \
+  SST=/path/to/sst-install/bin/sst
+```
+
+`07_results.txt` runs bambu's own Verilator simulation instead. The XML test vector
+is `test.xml` (inputs only, from `gen_test_xml.py`), set as `TEST_XML` in the
+Makefile.
+bambu computes the expected outputs by running `forward_kernel.c` on the host.
+See [c_to_verilog_verilog_tb.mk](../../../scripts/mkinc/c_to_verilog_verilog_tb.mk)
+and, for the SST run,
+[pytorch-to-verilog/3mm-no_weights](../../pytorch-to-verilog/3mm-no_weights/README.md#running-the-testbench-under-sst).
