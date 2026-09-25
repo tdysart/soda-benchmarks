@@ -19,18 +19,12 @@ ODIR=output
 TARGET=$(ODIR)/bambu/transformed/06_verilog.v
 # TARGET=$(ODIR)/bambu/transformed/07_results.txt # For simulation results
 
-# bambu v2023.1 via llvm-cbe, for its pure-Verilog (non-DPI) testbench.
-# Local tools only; see scripts/mkinc/llvm_to_verilog_bambu2023.mk.
-# TARGET=$(ODIR)/bambu2023/transformed/06_verilog.v
-# TARGET=$(ODIR)/bambu2023/transformed/07_results.txt # For simulation results
-# TARGET=$(ODIR)/bambu2023/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
-
-# bambu 2024 with the same testbench ported (--testbench-style=legacy), from
-# the IR directly. Local tools only; see scripts/mkinc/llvm_to_verilog_legacy_tb.mk.
-# TARGET=$(ODIR)/bambu-legacy/transformed/06_verilog.v
-# TARGET=$(ODIR)/bambu-legacy/transformed/07_results.txt # For simulation results
-# TARGET=$(ODIR)/bambu-legacy/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
-
+# Pure-Verilog (non-DPI) testbench, with a bambu that has
+# --testbench-style=verilog. Local tools only; see
+# scripts/mkinc/llvm_to_verilog_verilog_tb.mk.
+# TARGET=$(ODIR)/bambu-verilog-tb/transformed/06_verilog.v
+# TARGET=$(ODIR)/bambu-verilog-tb/transformed/07_results.txt # For simulation results
+# TARGET=$(ODIR)/bambu-verilog-tb/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
 
 all: $(TARGET)
 
@@ -55,5 +49,4 @@ BAMBU_DEVICE=asap7-BC
 # BAMBU_DEVICE=nangate45
 BAMBU_CLOCK_PERIOD=5
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
-include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_bambu2023.mk
-include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_legacy_tb.mk
+include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_verilog_tb.mk

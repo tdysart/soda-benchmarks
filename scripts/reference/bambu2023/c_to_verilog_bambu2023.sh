@@ -100,7 +100,7 @@ case "$BAMBU_DEVICE" in
     KERNELNAME=forward_kernel
     # If asap7-BC, this removes -BC from the device name leaving just asap7
     PLATFORM=${BAMBU_DEVICE%-*}
-    source ${SCRIPT_DIR}/patch_openroad_synt.sh
+    source ${SCRIPT_DIR}/../../patch_openroad_synt.sh
     ;;
 esac
 

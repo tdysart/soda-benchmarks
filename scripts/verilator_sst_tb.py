@@ -1,8 +1,8 @@
 #
-# verilator_sst_bambu2023_tb.py
+# verilator_sst_tb.py
 #
-# SST configuration that runs a bambu v2023.1 self-contained (non-DPI)
-# testbench under verilator-sst. Used by verilator_sst_bambu2023.sh.
+# SST configuration that runs bambu's self-contained, pure-Verilog (non-DPI)
+# testbench under verilator-sst. Used by verilator_sst.sh.
 #
 # bambu's --generate-tb=<file.xml> testbench (testbench_<kernel>_tb.v) is a
 # top module whose only port is `clock`. All stimulus, memory and result
@@ -13,7 +13,7 @@
 # Adapted from examples/c-to-verilog/3mm-v2/run_forwardKernelTB_v2023.py.
 #
 # Usage:
-#   sst verilator_sst_bambu2023_tb.py -- --build-dir <verilator-sst build> [--device forwardKernelTB] [--cycles N]
+#   sst verilator_sst_tb.py -- --build-dir <verilator-sst build> [--device forwardKernelTB] [--cycles N]
 #
 # Under Verilator, the testbench's $finish only sets a flag, so every clock
 # edge after it completes prints another $finish notice. Keep --cycles close
@@ -26,7 +26,7 @@ import sys
 
 import sst
 
-parser = argparse.ArgumentParser(description="Run a bambu v2023.1 self-contained testbench over its clock link")
+parser = argparse.ArgumentParser(description="Run a bambu self-contained Verilog testbench over its clock link")
 parser.add_argument("--build-dir", required=True, help="verilator-sst build directory (ENABLE_CUSTOM_MODULE=ON)")
 parser.add_argument("--device", default="forwardKernelTB", help="VERILOG_DEVICE the build was configured with")
 parser.add_argument("--cycles", type=int, default=40000, help="Number of clock cycles to run (default: 40000)")

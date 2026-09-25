@@ -29,52 +29,52 @@ The `<strategy>` can be either `baseline` or `optimized`, and is determined by t
     ├── 04_llvm_<strategy>.mlir
     ├── 05_llvm_<strategy>.ll // LLVM IR file
     ├── bambu/<strategy>/06_verilog.v
-    └── bambu2023/<strategy>/   // see below
-        ├── 05_kernel.c        // llvm-cbe translation of 05_llvm_<strategy>.ll
-        ├── test.xml           // bambu XML test vector
-        ├── 06_verilog.v
-        ├── 07_results.txt     // simulated cycle count
-        ├── HLS_output/simulation/testbench_forward_kernel_tb.v
-        ├── 08_sst_results.txt // same, from the run under SST
-        └── verilator-sst/     // staged Verilog, verilator-sst build, sst-run.log
+    └── bambu-verilog-tb/<strategy>/  // see below
+        ├── test.xml           // bambu XML test vector (inputs)
+        ├── architecture.xml   // C types of the kernel arguments
+        ├── 06_verilog.v
+        ├── 07_results.txt     // simulated cycle count
+        ├── HLS_output/simulation/testbench_forward_kernel_tb.v
+        ├── 08_sst_results.txt // same, from the run under SST
+        └── verilator-sst/     // staged Verilog, verilator-sst build, sst-run.log
 ```
 
 
-# Pure-Verilog Testbench with bambu v2023.1
+# Pure-Verilog Testbench
 
-Current bambu generates a DPI-C testbench. bambu v2023.1 can instead generate
-a self-contained, pure-Verilog testbench from an XML test vector
-(`--generate-tb=<file.xml>`). That testbench can run under verilator-sst
-without a hand-written one. The `bambu2023` targets produce it.
+bambu's default testbench uses DPI-C. With `--testbench-style=verilog`, bambu
+instead generates a self-contained, pure-Verilog testbench from an XML test
+vector (`--generate-tb=<file.xml>`), the one bambu v2023.1 and earlier
+generated. It can run under verilator-sst without a hand-written testbench.
+The `bambu-verilog-tb` targets produce it.
 
-bambu v2023.1's only front end is clang 13, which cannot read the LLVM 19 IR
-soda-opt emits. So these targets first translate the IR to C with
-[llvm-cbe](https://github.com/JuliaHubOSS/llvm-cbe) and synthesize that C
-instead. This path uses local tools only, not the docker image:
+`--testbench-style` is not in upstream bambu yet: it comes from branch
+`feature/legacy-xml-testbench` of `tdysart/PandA-bambu`. This path uses local
+tools only, not the docker image:
 
-* `bambu` v2023.1, passed as `BAMBU2023`
-* `llvm-cbe` built against the same LLVM as soda-opt, passed as `LLVM_CBE`.
-  Commit `21569b994b` is the last one that targets LLVM 19.1. Build it with
-  [setup-llvm-cbe.sh](../../../scripts/external/setup-llvm-cbe.sh).
+* bambu built from that branch, passed as `BAMBU_VERILOG_TB`
 * torch-mlir, soda-opt, `mlir-opt`/`mlir-translate`/`opt` on `PATH` (and
   torch-mlir's python package on `PYTHONPATH`) for the earlier steps. For
   LLVM 19.1, [setup-torch-mlir.sh](../../../scripts/external/setup-torch-mlir.sh)
   builds a matching torch-mlir.
 
 ```sh
-make output/bambu2023/transformed/07_results.txt \
-  BAMBU2023=/path/to/panda-2023/install/bin/bambu \
-  LLVM_CBE=/path/to/llvm-cbe/build/tools/llvm-cbe/llvm-cbe
+make output/bambu-verilog-tb/transformed/07_results.txt \
+  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu
 ```
 
-The test vector is built from soda-opt's `forward_kernel_testbench.c`: random
-inputs, and zeros for the last argument (the output). Pass
-`XML_ARGS="--seed 7"` and similar to change it (see
-[testbench_to_xml.py](../../../scripts/testbench_to_xml.py)). bambu checks the
-simulated outputs against a host run of the same C.
+[testbench_to_xml.py](../../../scripts/testbench_to_xml.py) builds `test.xml`
+from soda-opt's `forward_kernel_testbench.c`: random inputs, and zeros for the
+last argument (the output). Pass `XML_ARGS="--seed 7"` and similar to change
+it. The XML holds inputs only; bambu runs `05_llvm_<strategy>.ll` on the host
+to get the expected outputs. The script also writes `architecture.xml`, passed
+to bambu as `--architecture-xml`, because opaque pointers leave the
+arguments' element types (`float*`) out of the IR.
+(`testbench_to_xml.py --expected-from` can still put host-computed outputs
+into the XML, e.g. to cross-check bambu.)
 
-The generated testbench opens `values.txt` and `results.txt` by absolute path,
-so update those `$fopen` calls if you move it.
+The testbench opens `HLS_output/simulation/values.txt` and `results.txt`
+relative to the output directory, so run it from there.
 
 
 ## Running the testbench under SST
@@ -90,9 +90,8 @@ component and runs it under SST. It needs:
   directory.
 
 ```sh
-make output/bambu2023/transformed/08_sst_results.txt \
-  BAMBU2023=/path/to/panda-2023/install/bin/bambu \
-  LLVM_CBE=/path/to/llvm-cbe/build/tools/llvm-cbe/llvm-cbe \
+make output/bambu-verilog-tb/transformed/08_sst_results.txt \
+  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu \
   VERILATOR_SST_SRC=/path/to/verilator-sst \
   SST=/path/to/sst-install/bin/sst
 ```
@@ -101,32 +100,7 @@ The run fails if the testbench reports a mismatch or doesn't finish.
 By default it runs bambu's simulated cycle count plus 10% (from
 `07_results.txt` if you built it), or 40000 cycles; set `SST_CYCLES` to
 override. The SST configuration is
-[verilator_sst_bambu2023_tb.py](../../../scripts/verilator_sst_bambu2023_tb.py).
+[verilator_sst_tb.py](../../../scripts/verilator_sst_tb.py).
 
-
-# The Same Testbench with bambu 2024
-
-Branch `feature/legacy-xml-testbench` of `tdysart/PandA-bambu` ports
-v2023.1's testbench to bambu 2024 as `--testbench-style=legacy`. Its clang 16
-front end reads soda-opt's IR, so the `bambu-legacy` targets need no llvm-cbe
-step. They need:
-
-* bambu built from that branch, passed as `BAMBU_LEGACY_TB`
-* for `08_sst_results.txt`, `VERILATOR_SST_SRC` and `SST` as above
-
-```sh
-make output/bambu-legacy/transformed/08_sst_results.txt \
-  BAMBU_LEGACY_TB=/path/to/PandA-bambu/obj/src/bambu \
-  VERILATOR_SST_SRC=/path/to/verilator-sst \
-  SST=/path/to/sst-install/bin/sst
-```
-
-[testbench_to_xml.py](../../../scripts/testbench_to_xml.py) writes `test.xml`
-with inputs only; bambu runs `05_llvm_<strategy>.ll` on the host to get the
-expected outputs. It also writes `architecture.xml`, passed to bambu as
-`--architecture-xml`, because opaque pointers leave the arguments' element
-types (`float*`) out of the IR. (`testbench_to_xml.py --expected-from` can
-still put host-computed outputs into the XML, e.g. to cross-check bambu.)
-
-This testbench opens `HLS_output/simulation/values.txt` and `results.txt`
-relative to the output directory, so run it from there.
+The earlier route to the same testbench, bambu v2023.1 by way of llvm-cbe, is
+kept for reference in [scripts/reference/bambu2023](../../../scripts/reference/bambu2023/README.md).

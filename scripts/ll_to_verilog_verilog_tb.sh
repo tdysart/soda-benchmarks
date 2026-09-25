@@ -1,13 +1,13 @@
 #!/bin/bash
 # Synthesize soda-opt's LLVM IR with bambu 2024 and generate the pure-Verilog
-# (non-DPI) testbench of --testbench-style=legacy from an XML test vector.
+# (non-DPI) testbench of --testbench-style=verilog from an XML test vector.
 #
-# Usage: ll_to_verilog_legacy_tb.sh <input.ll> <test.xml> <architecture.xml> <output.v>
+# Usage: ll_to_verilog_verilog_tb.sh <input.ll> <test.xml> <architecture.xml> <output.v>
 #
 # --testbench-style is not in upstream bambu yet: it needs a bambu built from
 # branch feature/legacy-xml-testbench of tdysart/PandA-bambu. That testbench is
-# the one bambu v2023.1 generated, ported to 2024, so unlike the bambu2023 flow
-# (c_to_verilog_bambu2023.sh) the IR needs no translation to C.
+# the one bambu v2023.1 generated, ported to 2024, so unlike the old bambu2023
+# flow (scripts/reference/bambu2023) the IR needs no translation to C.
 #
 # <test.xml> and <architecture.xml> come from testbench_to_xml.py
 # (--param-prefix P --param-base 0 --arch-xml ...). Without expected outputs
@@ -21,7 +21,7 @@
 # opens values.txt and results.txt by path relative to the output directory.
 #
 # Environment:
-#   BAMBU_LEGACY_TB       bambu with --testbench-style (default: bambu on PATH)
+#   BAMBU_VERILOG_TB       bambu with --testbench-style (default: bambu on PATH)
 #   BAMBU_DEVICE          (default: asap7-BC)
 #   BAMBU_CLOCK_PERIOD    (default: 5)
 #   BAMBU_MEMPOLICY       (default: NO_BRAM)
@@ -36,20 +36,20 @@ if [ "$#" -ne 4 ]; then
   exit 1
 fi
 
-BAMBU_LEGACY_TB="${BAMBU_LEGACY_TB:-bambu}"
+BAMBU_VERILOG_TB="${BAMBU_VERILOG_TB:-bambu}"
 BAMBU_DEVICE="${BAMBU_DEVICE:-asap7-BC}"
 BAMBU_MEMPOLICY="${BAMBU_MEMPOLICY:-NO_BRAM}"
 BAMBU_CLOCK_PERIOD="${BAMBU_CLOCK_PERIOD:-5}"
 BAMBU_RUN_SIMULATION="${BAMBU_RUN_SIMULATION:-false}"
 
-if ! command -v "$BAMBU_LEGACY_TB" &> /dev/null; then
-  echo "ERROR: $BAMBU_LEGACY_TB could not be found. Set BAMBU_LEGACY_TB to a bambu with --testbench-style." >&2
+if ! command -v "$BAMBU_VERILOG_TB" &> /dev/null; then
+  echo "ERROR: $BAMBU_VERILOG_TB could not be found. Set BAMBU_VERILOG_TB to a bambu with --testbench-style." >&2
   exit 1
 fi
 # Capture the help first: grep -q exiting early would fail the pipe (pipefail).
-BAMBU_HELP="$("$BAMBU_LEGACY_TB" --help 2>&1 || true)"
+BAMBU_HELP="$("$BAMBU_VERILOG_TB" --help 2>&1 || true)"
 if ! grep -q -- "--testbench-style" <<< "$BAMBU_HELP"; then
-  echo "ERROR: $BAMBU_LEGACY_TB has no --testbench-style option; build bambu from" >&2
+  echo "ERROR: $BAMBU_VERILOG_TB has no --testbench-style option; build bambu from" >&2
   echo "       branch feature/legacy-xml-testbench of tdysart/PandA-bambu." >&2
   exit 1
 fi
@@ -73,7 +73,7 @@ if [ "$BAMBU_RUN_SIMULATION" = "true" ]; then
   SIMULATION_ARGS="--simulate --simulator=VERILATOR --verilator-parallel"
 fi
 
-"$BAMBU_LEGACY_TB" -v3 --print-dot \
+"$BAMBU_VERILOG_TB" -v3 --print-dot \
 	-lm --soft-float \
 	--compiler=I386_CLANG16 \
 	--device=$BAMBU_DEVICE \
@@ -84,7 +84,7 @@ fi
 	--disable-function-proxy \
 	--architecture-xml=$ARCH_XML \
 	--generate-tb=$TEST_XML \
-	--testbench-style=legacy \
+	--testbench-style=verilog \
 	$SIMULATION_ARGS \
 	--top-fname=forward_kernel \
 	input.ll 2>&1 | tee bambu-log

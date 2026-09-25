@@ -14,14 +14,15 @@ LLVM IR given to bambu 2024 directly they are P0..P<N-1>
 (--param-prefix P --param-base 0).
 
 With --arch-xml it also writes a bambu --architecture-xml file that gives each
-parameter its C type (e.g. float*). bambu 2024's legacy testbench
-(--testbench-style=legacy) needs it for LLVM IR input: with opaque pointers
+parameter its C type (e.g. float*). bambu 2024's pure-Verilog testbench
+(--testbench-style=verilog) needs it for LLVM IR input: with opaque pointers
 the IR only says ptr, and bambu would otherwise see every pointer as void*.
 
 With --expected-from it also runs the kernel on the host (an LLVM IR file,
 compiled with llc, or a C file) on the generated inputs and adds the output
 arguments' results as expected values (<param>:output). The testbench then
-checks them; bambu 2024's legacy testbench requires them.
+checks them. bambu 2024's --testbench-style=verilog computes missing expected
+values itself, so this is mainly useful to cross-check it.
 
 Usage:
     testbench_to_xml.py forward_kernel_testbench.c -o test.xml

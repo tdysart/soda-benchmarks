@@ -2,15 +2,15 @@
 
 # Build llvm-cbe (LLVM IR -> C backend) against an existing LLVM install.
 #
-# Used by scripts/ll_to_c_cbe.sh, which feeds soda-opt's LLVM 19 IR to bambu
-# v2023.1 as C (see scripts/mkinc/llvm_to_verilog_bambu2023.mk).
+# Used by ll_to_c_cbe.sh, which feeds soda-opt's LLVM 19 IR to bambu v2023.1
+# as C (see llvm_to_verilog_bambu2023.mk, in the same directory).
 #
 # llvm-cbe tracks one LLVM major version per commit. 21569b994b is the last
 # commit targeting LLVM 19.1 (the next one, 379d105c2c, moves to LLVM 20), so
 # it matches the LLVM soda-opt is built with.
 #
 # Usage:
-#   LLVM_CONFIG=/path/to/llvm/install/bin/llvm-config ./scripts/external/setup-llvm-cbe.sh [WORK_DIR]
+#   LLVM_CONFIG=/path/to/llvm/install/bin/llvm-config ./scripts/reference/bambu2023/setup-llvm-cbe.sh [WORK_DIR]
 #
 # WORK_DIR defaults to builds/llvm-cbe in this repo. The binary ends up at
 # WORK_DIR/build/tools/llvm-cbe/llvm-cbe.
@@ -23,7 +23,7 @@
 set -e -o pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-BASE_DIR=$SCRIPT_DIR/../..
+BASE_DIR=$SCRIPT_DIR/../../..
 
 LLVM_CBE_COMMIT="${LLVM_CBE_COMMIT:-21569b994b019c711c5631edf1e7273332138f3d}"
 PROJ_URL="${PROJ_URL:-https://github.com/JuliaHubOSS/llvm-cbe.git}"
