@@ -52,6 +52,13 @@ flow itself need only bambu and llvm@16.
 | Verilator, SST, verilator-sst | none | the SST runs |
 | bambu v2023.1, llvm-cbe | `llvm@14`; llvm-cbe against LLVM 19.1.5 | only the [reference flow](../scripts/reference/bambu2023/README.md) |
 
+soda-opt is what sets LLVM 19.1.5. Its README says it was tested with
+llvm-project commit `ab4b5a2db582958af1ee308a790cfdb42bd24720`, which is the
+`llvmorg-19.1.5` tag, and its dev container and CI build `llvmorg-19.1.5`
+(`LLVM_BRANCH`). Nothing in its build checks the version, but it uses LLVM's
+C++ APIs, which change between releases, so build it against exactly that
+LLVM. The other LLVM 19 tools above come from the same install.
+
 ## 1. Build bambu
 
 ```sh
