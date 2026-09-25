@@ -25,6 +25,12 @@ TARGET=$(ODIR)/bambu/transformed/06_verilog.v
 # TARGET=$(ODIR)/bambu2023/transformed/07_results.txt # For simulation results
 # TARGET=$(ODIR)/bambu2023/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
 
+# bambu 2024 with the same testbench ported (--testbench-style=legacy), from
+# the IR directly. Local tools only; see scripts/mkinc/llvm_to_verilog_legacy_tb.mk.
+# TARGET=$(ODIR)/bambu-legacy/transformed/06_verilog.v
+# TARGET=$(ODIR)/bambu-legacy/transformed/07_results.txt # For simulation results
+# TARGET=$(ODIR)/bambu-legacy/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
+
 
 all: $(TARGET)
 
@@ -50,3 +56,4 @@ BAMBU_DEVICE=asap7-BC
 BAMBU_CLOCK_PERIOD=5
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_bambu2023.mk
+include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_legacy_tb.mk

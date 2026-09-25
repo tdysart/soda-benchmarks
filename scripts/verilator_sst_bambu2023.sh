@@ -4,15 +4,17 @@
 #
 # Usage: verilator_sst_bambu2023.sh <bambu_dir/06_verilog.v> <output_results.txt>
 #
-# <bambu_dir> is an output directory of c_to_verilog_bambu2023.sh. Its
+# <bambu_dir> is an output directory of c_to_verilog_bambu2023.sh, or of
+# ll_to_verilog_legacy_tb.sh (bambu 2024's port of the same testbench). Its
 # forward_kernel.v and HLS_output/simulation/testbench_forward_kernel_tb.v are
 # staged into <bambu_dir>/verilator-sst/verilog (on their own: bambu's
 # 06_verilog.v copy would duplicate every module), built with verilator-sst's
 # custom-module path, and run with verilator_sst_bambu2023_tb.py.
 #
-# The testbench writes its result to <bambu_dir>/results.txt (the absolute
-# path bambu baked into it); that file is removed before the run and copied to
-# <output_results.txt> after, so a stale result is never reported. Exits
+# The testbench writes its result to <bambu_dir>/results.txt (v2023.1 bakes in
+# the absolute path, 2024 a path relative to <bambu_dir>); that file is
+# removed before the run and copied to <output_results.txt> after, so a stale
+# result is never reported. Exits
 # non-zero unless the testbench reports a pass.
 #
 # Runs locally only (no docker). Needs a verilator-sst checkout with
@@ -60,7 +62,7 @@ WORK_DIR="$BAMBU_DIR/verilator-sst"
 
 for f in "$BAMBU_DIR/forward_kernel.v" "$TESTBENCH"; do
   if [ ! -f "$f" ]; then
-    echo "ERROR: $f not found; run c_to_verilog_bambu2023.sh first." >&2
+    echo "ERROR: $f not found; run c_to_verilog_bambu2023.sh or ll_to_verilog_legacy_tb.sh first." >&2
     exit 1
   fi
 done
@@ -99,10 +101,12 @@ rm -f "$BAMBU_DIR/results.txt"
 
 # The SST log repeats a $finish notice for every cycle after the testbench
 # completes; keep it in a file and show only the testbench's own messages.
-"$SST" "$SCRIPT_DIR/verilator_sst_bambu2023_tb.py" -- \
+# Run from <bambu_dir>: a testbench from bambu 2024's --testbench-style=legacy
+# opens HLS_output/simulation/values.txt and results.txt by relative path.
+(cd "$BAMBU_DIR" && "$SST" "$SCRIPT_DIR/verilator_sst_bambu2023_tb.py" -- \
   --build-dir "$WORK_DIR/build" \
   --device "$VERILATOR_SST_DEVICE" \
-  --cycles "$SST_CYCLES" > "$WORK_DIR/sst-run.log" 2>&1
+  --cycles "$SST_CYCLES") > "$WORK_DIR/sst-run.log" 2>&1
 grep -E "Simulation|ERROR" "$WORK_DIR/sst-run.log" | grep -v '\$finish' || true
 
 if [ ! -s "$BAMBU_DIR/results.txt" ]; then
