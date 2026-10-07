@@ -49,3 +49,23 @@ bambu computes the expected outputs by running `forward_kernel.c` on the host.
 See [c_to_verilog_verilog_tb.mk](../../../scripts/mkinc/c_to_verilog_verilog_tb.mk)
 and, for the SST run,
 [pytorch-to-verilog/3mm-no_weights](../../pytorch-to-verilog/3mm-no_weights/README.md#running-the-testbench-under-sst).
+
+### With bambu dev/panda
+
+The `bambu-devpanda-tb` targets do the same with the bambu on upstream's `dev/panda` branch
+(branch `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which builds on macOS and
+has its own `--testbench-style=verilog`). They run this directory's C testbench
+(`forward_kernel_testbench.c`) natively to record the memory images and the reference results,
+and the Verilog testbench replays them, so no XML test vector is needed. The kernel declares
+its `m_axi` interfaces in the form `dev/panda` reads, next to the older one.
+
+```sh
+make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
+  BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu \
+  VERILATOR_SST_SRC=/path/to/verilator-sst \
+  SST=/path/to/sst-install/bin/sst
+```
+
+`07_results.txt` stops after bambu's Verilator simulation. Expect 26322 cycles both there and
+under SST. See [c_to_verilog_devpanda_tb.mk](../../../scripts/mkinc/c_to_verilog_devpanda_tb.mk).
+

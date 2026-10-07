@@ -166,6 +166,11 @@ VERILATOR_SST_SRC=/path/to/verilator-sst SST=/path/to/sst \
   scripts/verilator_sst_devpanda_tb.sh <bambu_dir> results.txt
 ```
 
+The c-to-verilog examples have make targets for the whole chain
+(`make output/bambu-devpanda-tb/baseline/08_sst_results.txt BAMBU_DEVPANDA=... VERILATOR_SST_SRC=... SST=...`,
+see [3mm-v2](../examples/c-to-verilog/3mm-v2/README.md#with-bambu-devpanda)); they use the example's C
+testbench and `m_axi` pragmas in the `dev/panda` syntax.
+
 It expects `verilator-sst: PASS in <N> cycles`, the same count bambu reports natively, and exits
 non-zero when the testbench reports a mismatch. The soda-plugins `forward` design (`gemm_small`)
 passes in 1849 cycles both natively and under SST. For that flow generate the IR with

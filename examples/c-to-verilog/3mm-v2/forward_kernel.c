@@ -5,6 +5,14 @@
 #pragma HLS_interface P4 m_axi direct
 #pragma HLS_interface P5 m_axi direct
 #pragma HLS_interface P6 m_axi direct
+// bambu dev/panda reads this form (the one above is for the older bambu)
+#pragma HLS interface port=P0 mode=m_axi offset=direct bundle=gmem0
+#pragma HLS interface port=P1 mode=m_axi offset=direct bundle=gmem0
+#pragma HLS interface port=P2 mode=m_axi offset=direct bundle=gmem0
+#pragma HLS interface port=P3 mode=m_axi offset=direct bundle=gmem0
+#pragma HLS interface port=P4 mode=m_axi offset=direct bundle=gmem0
+#pragma HLS interface port=P5 mode=m_axi offset=direct bundle=gmem0
+#pragma HLS interface port=P6 mode=m_axi offset=direct bundle=gmem0
 
 #define S 10 // Number of elements in each dimension
 
