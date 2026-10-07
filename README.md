@@ -89,6 +89,7 @@ ever silently overwritten. Deriving a name for `init` requires
 - Triggering instrumentation and IP integration flows using the `sb-cli` command line interface: [Instrumentation](docs/Intrumentation.md)
 - Building a scaffolded experiment with SiliconCompiler instead of the generated Makefile: [A SiliconCompiler builder for `sb-cli`](docs/SiliconCompilerBackend.md)
 - Generating a pure-Verilog (non-DPI) testbench with bambu and running it under SST via verilator-sst: [Pure-Verilog testbench for verilator-sst](docs/PureVerilogTestbench.md)
+- Building bambu `dev/panda` on macOS and using its DPI-free testbench, including soda-plugins dataflow designs: [Bambu dev/panda on macOS](docs/BambuDevPanda.md)
 
 
 ## Project Structure

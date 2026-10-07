@@ -154,7 +154,8 @@ builds on, and is the only bambu that accepts the soda-plugins dataflow designs 
 nodes). The branch `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu` builds it natively
 on macOS and has its own `--testbench-style=verilog`: the C testbench is run natively to record
 memory images, and the Verilog testbench replays and checks them with no DPI host. Its
-`MACOS_PORT.md` has the build recipe, the macOS notes and the current limits.
+`MACOS_PORT.md` has the build recipe, the macOS notes and the current limits; the full guide is
+[BambuDevPanda.md](BambuDevPanda.md).
 
 Given a bambu output directory made with
 `--simulate --simulator=VERILATOR --testbench-style=verilog`,
