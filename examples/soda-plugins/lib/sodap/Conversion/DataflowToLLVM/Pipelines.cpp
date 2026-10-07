@@ -33,6 +33,10 @@ struct DataflowToLLVMPipelineOptions
   Option<std::string> includePandaPath{
       *this, "include-panda-path", llvm::cl::init(SODAP_BAMBU_INCLUDE),
       llvm::cl::desc("Directory holding ac_channel.h")};
+  Option<unsigned> machineBits{
+      *this, "machine-bits", llvm::cl::init(32),
+      llvm::cl::desc("Word size (32 or 64) of the specialization unit; match "
+                     "Bambu's -m32/-m64")};
 };
 } // namespace
 
@@ -51,7 +55,8 @@ void mlir::sodap::registerDataflowToLLVMPipeline() {
         pm.addPass(createEmitBambuArchitecture(
             {opts.archFile, opts.topFunc, opts.includePandaPath}));
         pm.addPass(
-            createConvertDataflowToLLVM({opts.clangxx, opts.includePandaPath}));
+            createConvertDataflowToLLVM(
+            {opts.clangxx, opts.includePandaPath, opts.machineBits}));
 
         // Node-local buffers become stack arrays instead of malloc calls.
         // A func.func pass: --pass-pipeline does not nest it on its own.

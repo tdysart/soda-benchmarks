@@ -211,17 +211,19 @@ ConvertDataflowToLLVM::buildSpecializations(ArrayRef<Type> elementTypes) {
   // 2. Compile it. -O0 -fno-inline keeps the ctor/dtor probes readable; the
   // always_inline on read()/write() still fires, which is what exposes the
   // seam. -D__BAMBU__ keeps ac_int.h off its host branch (<iostream>,
-  // <execinfo.h> and an ios_base_library_init module asm). -m32 is not a
-  // knob: it has to match the ABI of the Bambu gold model, and a 64-bit
-  // ac_channel layout would be read back here and then be wrong.
+  // <execinfo.h> and an ios_base_library_init module asm). The word size has
+  // to match the ABI of the Bambu gold model, and the layout read back here
+  // is whatever this compile produced, so it is -m32 unless asked otherwise
+  // (-m32 does not exist on every host, e.g. arm64 macOS).
   auto clang = llvm::sys::findProgramByName(clangxx);
   if (!clang)
     return module.emitError("cannot find the C++ compiler '") << clangxx << "'";
 
   {
     std::string includeFlag = "-I" + includePandaPath;
+    std::string machineFlag = "-m" + std::to_string(machineBits);
     StringRef argv[] = {
-        clangxx,       "-m32", includeFlag,  "-std=c++17", "-O0", "-fno-inline",
+        clangxx,       machineFlag, includeFlag, "-std=c++17", "-O0", "-fno-inline",
         "-D__BAMBU__", "-S",   "-emit-llvm", tuFileName,   "-o",  irFileName};
 
     std::string error;
@@ -324,6 +326,10 @@ void ConvertDataflowToLLVM::runOnOperation() {
   if (clangxx.empty() || clangxx == "\"\"" || includePandaPath.empty() ||
       includePandaPath == "\"\"") {
     module.emitError() << "clangxx and include-panda-path cannot be empty";
+    return signalPassFailure();
+  }
+  if (machineBits != 32 && machineBits != 64) {
+    module.emitError() << "machine-bits must be 32 or 64";
     return signalPassFailure();
   }
 

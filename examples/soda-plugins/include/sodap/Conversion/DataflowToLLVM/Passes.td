@@ -26,7 +26,11 @@ def ConvertDataflowToLLVM :
            "C++ compiler used to build the specialization unit">,
     Option<"includePandaPath", "include-panda-path", "std::string",
            /*default=*/"SODAP_BAMBU_INCLUDE",
-           "Directory holding ac_channel.h and friends">
+           "Directory holding ac_channel.h and friends">,
+    Option<"machineBits", "machine-bits", "unsigned", /*default=*/"32",
+           "Word size (32 or 64) the specialization unit is compiled for; "
+           "match Bambu's -m32/-m64. Use 64 where the host compiler has no "
+           "32-bit target, such as arm64 macOS">
   ];
   let dependentDialects = [
     "::mlir::sodap::dataflow::DataflowDialect",

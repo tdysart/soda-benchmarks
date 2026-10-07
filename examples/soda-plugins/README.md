@@ -108,6 +108,10 @@ The pass writes `ac_channel_specializations.{cpp,ll}` in the working directory. 
 `clangxx=` and `include-panda-path=` on the pipeline to override the defaults compiled in
 from `SODAP_BAMBU_ROOT`.
 
+The specialization unit is compiled for a 32-bit target by default, to match Bambu's default
+`-m32`. Pass `machine-bits=64` (together with `bambu -m64`) where the host compiler has no
+32-bit target, as on arm64 macOS.
+
 ### Running Bambu
 
 Pass `--generate-interface=INFER`:
