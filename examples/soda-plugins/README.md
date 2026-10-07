@@ -67,3 +67,68 @@ mlir-opt \
   --transform-interpreter \
   /workspaces/soda-benchmarks/examples/soda-plugins/test/sodap/my-extension.mlir 
 ```
+
+
+## Lowering dataflow to Verilog with Bambu
+
+The `DataflowToLLVM` passes lower `dataflow` streams to the `ac_channel` ABI that Bambu
+recognizes, and emit the `--architecture-xml` file describing the dataflow top, its modules,
+and the FIFO bundles between them.
+
+### Requirements
+
+- A Bambu from upstream's `dev/panda` branch. It is the first to accept the `array_dims`
+  parameter attribute in `architecture.xml`, and its `ac_channel.h` has no nested `fifo`
+  class (channel accesses are `_read_bambu_internal` / `_write_bambu_internal`), which is
+  what `ConvertDataflowToLLVM` expects. Bambu 2024.10 and `upstream/main` reject the XML
+  (`array_dims`) and then fail to synthesize the channel calls.
+- The LLVM that the plugin's IR comes from and the clang Bambu uses must be the same major
+  version (opaque pointers): clang 16 cannot read the plugin's LLVM 19 IR.
+- `SODAP_BAMBU_ROOT` set at configure time, so the Bambu tests are enabled. Without it
+  they are reported as unsupported.
+
+### Flow
+
+Run the backend pipeline on dataflow IR in the call-graph form that
+`sodap-dataflow-nodes-to-func` produces (see
+`test/sodap/Conversion/DataflowToLLVM/Inputs/gemm_small.mlir`), then translate and link:
+
+```bash
+mlir-opt kernel.mlir \
+  --load-dialect-plugin=build/lib/SODAPlugin.so \
+  --load-pass-plugin=build/lib/SODAPlugin.so \
+  --pass-pipeline="builtin.module(sodap-dataflow-to-llvm-pipeline{top-func=forward arch-file=architecture.xml})" \
+  -o llvm.mlir
+mlir-translate --mlir-to-llvmir llvm.mlir -o kernel.ll
+llvm-link -S kernel.ll ac_channel_specializations.ll -o linked.ll
+opt linked.ll -passes=always-inline -S -o final.ll
+```
+
+The pass writes `ac_channel_specializations.{cpp,ll}` in the working directory. Set
+`clangxx=` and `include-panda-path=` on the pipeline to override the defaults compiled in
+from `SODAP_BAMBU_ROOT`.
+
+### Running Bambu
+
+Pass `--generate-interface=INFER`:
+
+```bash
+bambu -m64 final.ll --top-fname=forward --architecture-xml=architecture.xml \
+  --generate-interface=INFER --compiler=I386_CLANG19 \
+  --device-name=nangate45 --clock-period=5
+```
+
+Without `--generate-interface=INFER` Bambu defaults to minimal interface generation, which
+forces every interface to `default`. The channel arguments of the dataflow modules are then
+never turned into FIFO ports, and synthesis stops with *"Operation for which does not
+exist a functional unit ... `_read_bambu_internal`"*.
+
+`-m64` is only needed where the compiler has no i386 target (for example clang on macOS
+arm64). `--compiler` must name a clang of the same major version as the LLVM that produced
+`final.ll`.
+
+### Building on macOS
+
+The plugin links with `-force_load` on Apple platforms (`ld64` has no `--whole-archive`).
+MLIR installs built with the Python bindings need NumPy at configure time; point CMake at
+an interpreter that has it with `-DPython3_EXECUTABLE=...`.
