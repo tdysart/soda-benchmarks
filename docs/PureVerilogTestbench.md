@@ -147,6 +147,31 @@ arguments' element types out of the IR, so
 [testbench_to_xml.py](../scripts/testbench_to_xml.py) also writes an
 `architecture.xml` (`float*` and so on) that the flow passes to bambu.
 
+## 5. Bambu `dev/panda`, including dataflow designs (experimental)
+
+Upstream bambu development is on `dev/panda`, which replaced the testbench the port above
+builds on, and is the only bambu that accepts the soda-plugins dataflow designs (FIFOs between
+nodes). The branch `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu` builds it natively
+on macOS and has its own `--testbench-style=verilog`: the C testbench is run natively to record
+memory images, and the Verilog testbench replays and checks them with no DPI host. Its
+`MACOS_PORT.md` has the build recipe, the macOS notes and the current limits.
+
+Given a bambu output directory made with
+`--simulate --simulator=VERILATOR --testbench-style=verilog`,
+[verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh) builds that testbench into
+a verilator-sst component and runs it under SST:
+
+```bash
+VERILATOR_SST_SRC=/path/to/verilator-sst SST=/path/to/sst \
+  scripts/verilator_sst_devpanda_tb.sh <bambu_dir> results.txt
+```
+
+It expects `verilator-sst: PASS in <N> cycles`, the same count bambu reports natively, and exits
+non-zero when the testbench reports a mismatch. The soda-plugins `forward` design (`gemm_small`)
+passes in 1849 cycles both natively and under SST. For that flow generate the IR with
+`machine-bits=64` on `sodap-dataflow-to-llvm-pipeline` and pass `--generate-interface=INFER` to
+bambu; see [examples/soda-plugins](../examples/soda-plugins/README.md).
+
 ## Troubleshooting
 
 * **`results.txt` never appears under SST.** The testbench relies on
