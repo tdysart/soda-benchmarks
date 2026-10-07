@@ -33,11 +33,22 @@ add_llvm_library(SODAPlugin
 # cl::opts), and that member's own references still bind to mlir-opt.
 set(SODAPLUGIN_ARCHIVES)
 foreach(lib ${SODAPLUGIN_LIBS})
-  list(APPEND SODAPLUGIN_ARCHIVES $<TARGET_FILE:${lib}>)
+  if(APPLE)
+    # ld64 has no --whole-archive; -force_load is its per-archive equivalent.
+    list(APPEND SODAPLUGIN_ARCHIVES -Wl,-force_load,$<TARGET_FILE:${lib}>)
+  else()
+    list(APPEND SODAPLUGIN_ARCHIVES $<TARGET_FILE:${lib}>)
+  endif()
 endforeach()
-target_link_libraries(SODAPlugin PRIVATE
-        -Wl,--whole-archive ${SODAPLUGIN_ARCHIVES} -Wl,--no-whole-archive
-        $<TARGET_FILE:MLIRTargetLLVMIRImport>)
+if(APPLE)
+  target_link_libraries(SODAPlugin PRIVATE
+          ${SODAPLUGIN_ARCHIVES}
+          $<TARGET_FILE:MLIRTargetLLVMIRImport>)
+else()
+  target_link_libraries(SODAPlugin PRIVATE
+          -Wl,--whole-archive ${SODAPLUGIN_ARCHIVES} -Wl,--no-whole-archive
+          $<TARGET_FILE:MLIRTargetLLVMIRImport>)
+endif()
 
 target_include_directories(
         SODAPlugin
