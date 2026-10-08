@@ -16,7 +16,8 @@ These need `torch-mlir-opt` and the TensorFlow tools `tf-opt`, `tf-mlir-translat
 and `flatbuffer_translate` on `PATH` when docker is not used (see
 [check_docker.sh](check_docker.sh)). Both are built from pinned upstream commits
 whose LLVM is closest to the LLVM 19.1.5 that soda-opt uses, so their TOSA output
-parses with its `mlir-opt`:
+parses with its `mlir-opt`; the full build guide is
+[docs/ModelConversionTools.md](../docs/ModelConversionTools.md):
 
 * [external/setup-torch-mlir.sh](external/setup-torch-mlir.sh) - Builds `torch-mlir-opt` and the torch-mlir Python package.
 * [external/setup-tensorflow-mlir.sh](external/setup-tensorflow-mlir.sh) - Builds the three TensorFlow tools with Bazel (about 30 minutes on 14 cores). The default location is `../tensorflow`. On macOS it works with only the Command Line Tools installed, with no full Xcode.
