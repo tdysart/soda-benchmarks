@@ -48,6 +48,7 @@ flow itself need only bambu and llvm@16.
 | `mlir-opt`, `mlir-translate`, `opt` | the same LLVM 19.1.5 install, on `PATH` | MLIR examples (`tosa_to_linalg.sh`, `linalg_to_llvm.sh`, `llvm_to_ll.sh`, `mlir_to_graph.sh`) |
 | `llc` | the same LLVM 19.1.5 install | only `testbench_to_xml.py --expected-from` (optional) |
 | torch-mlir | its own submodule, LLVM `d16b21b` (19 development), commit `43506726853b` | PyTorch examples; chosen so its TOSA output parses with LLVM 19.1's `mlir-opt` ([setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh)) |
+| TensorFlow MLIR tools (`tf-opt`, `tf-mlir-translate`, `flatbuffer_translate`) | their own LLVM, `acc159aea1e6` (2024-07-23, the `release/19.x` branch point), TF commit `d7f515cc2fd8` | TFLite and TensorFlow examples (`tflite_to_tosa.sh`, `graphdef_to_tosa.sh`); chosen so the TOSA output parses with LLVM 19.1's `mlir-opt` ([setup-tensorflow-mlir.sh](../scripts/external/setup-tensorflow-mlir.sh)) |
 | bambu 2024 | Homebrew `llvm@16` (clang 16 front end, `llvm-ar`/`llvm-ranlib`) | all bambu targets; clang 16 reads soda-opt's LLVM 19 IR text |
 | Verilator, SST, verilator-sst | none | the SST runs |
 | bambu v2023.1, llvm-cbe | `llvm@14`; llvm-cbe against LLVM 19.1.5 | only the [reference flow](../scripts/reference/bambu2023/README.md) |

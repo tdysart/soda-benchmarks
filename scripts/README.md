@@ -12,6 +12,15 @@ to TOSA MLIR.
 * [protobuf_to_tosa.sh](protobuf_to_tosa.sh) - Converts a protobuf model `<model.pb>` or `<model.pbtxt> to TOSA MLIR.
 * [tf_to_tosa.sh](tf_to_tosa.sh) - Converts a TensorFlow model `<model.pb>` or `<model.pbtxt>` to TOSA MLIR.
 
+These need `torch-mlir-opt` and the TensorFlow tools `tf-opt`, `tf-mlir-translate`
+and `flatbuffer_translate` on `PATH` when docker is not used (see
+[check_docker.sh](check_docker.sh)). Both are built from pinned upstream commits
+whose LLVM is closest to the LLVM 19.1.5 that soda-opt uses, so their TOSA output
+parses with its `mlir-opt`:
+
+* [external/setup-torch-mlir.sh](external/setup-torch-mlir.sh) - Builds `torch-mlir-opt` and the torch-mlir Python package.
+* [external/setup-tensorflow-mlir.sh](external/setup-tensorflow-mlir.sh) - Builds the three TensorFlow tools with Bazel (about 30 minutes on 14 cores). The default location is `../tensorflow`. On macOS it works with only the Command Line Tools installed, with no full Xcode.
+
 ## Lowering
 
 The following scripts should be used in the given order to lower the TOSA MLIR to LLVM IR.

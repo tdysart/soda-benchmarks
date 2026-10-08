@@ -24,6 +24,7 @@ NEEDED_BINARIES=(
   flatbuffer_translate
   tf-mlir-translate
   tf-opt
+  torch-mlir-opt
   bambu
 )
 
