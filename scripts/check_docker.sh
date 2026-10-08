@@ -21,6 +21,9 @@ NEEDED_BINARIES=(
   soda-translate
   mlir-opt
   mlir-translate
+  flatbuffer_translate
+  tf-mlir-translate
+  tf-opt
   bambu
 )
 
