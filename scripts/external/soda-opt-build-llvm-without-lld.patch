@@ -1,0 +1,13 @@
+diff --git a/build_tools/build_llvm.sh b/build_tools/build_llvm.sh
+index 8babf63..0d1ae7b 100755
+--- a/build_tools/build_llvm.sh
++++ b/build_tools/build_llvm.sh
+@@ -48,7 +48,7 @@ cmake -GNinja \
+   "-B$build_dir" \
+   -DCMAKE_INSTALL_PREFIX=$install_dir  \
+   -DLLVM_INSTALL_UTILS=ON   \
+-  -DLLVM_ENABLE_LLD=ON   \
++  -DLLVM_ENABLE_LLD=OFF   \
+   -DLLVM_ENABLE_PROJECTS="mlir"   \
+   -DLLVM_TARGETS_TO_BUILD="host"   \
+   -DLLVM_INCLUDE_TOOLS=ON   \

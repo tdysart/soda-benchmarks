@@ -58,6 +58,12 @@ llvm-project commit `ab4b5a2db582958af1ee308a790cfdb42bd24720`, which is the
 C++ APIs, which change between releases, so build it against exactly that
 LLVM. The other LLVM 19 tools above come from the same install.
 
+On macOS, soda-opt's `build_tools/build_llvm.sh` needs one change: it configures LLVM
+with `-DLLVM_ENABLE_LLD=ON`, and lld is not installed with Homebrew's default
+toolchain. [soda-opt-build-llvm-without-lld.patch](../scripts/external/soda-opt-build-llvm-without-lld.patch)
+turns it off (`git apply` it in the soda-opt checkout before building). It is kept here
+because soda-opt is a separate repository (`pnnl/soda-opt`).
+
 ## 1. Build bambu
 
 Follow [BambuDevPanda.md](BambuDevPanda.md#1-build). It produces an install
