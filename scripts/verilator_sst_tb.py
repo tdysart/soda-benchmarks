@@ -10,7 +10,7 @@
 # VerilatorTestLink. The testbench writes its pass/fail and cycle count to the
 # results.txt path baked into it when bambu generated it.
 #
-# Adapted from examples/c-to-verilog/3mm-v2/run_forwardKernelTB_v2023.py.
+# Adapted from run_forwardKernelTB_v2023.py of the former examples/c-to-verilog/3mm-v2 (see git history).
 #
 # Usage:
 #   sst verilator_sst_tb.py -- --build-dir <verilator-sst build> [--device forwardKernelTB] [--cycles N]

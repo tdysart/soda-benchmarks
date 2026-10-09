@@ -17,7 +17,7 @@ the macOS port, are in `MACOS_PORT.md` at its root.
 | C and LLVM IR input to Verilog, including soft-float | Internal memory-mapped globals in the testbench |
 | `--testbench-style=verilog` with Verilator: array, scalar-port and `m_axi` interfaces, several calls per testbench | Top-level FIFO/AXIS/channel interfaces and return values in the testbench |
 | The soda-plugins dataflow design `forward` (FIFOs between nodes), simulated and run under SST | Simulators other than Verilator |
-| `make ...bambu-devpanda-tb/...` targets for `3mm` and `3mm-v2`, natively and under SST | The OpenROAD patch step (`patch_openroad_synt.sh`) for the generated Verilog |
+| `make ...bambu-devpanda-tb/...` targets for `3mm`, natively and under SST | The OpenROAD patch step (`patch_openroad_synt.sh`) for the generated Verilog |
 
 ## Why this branch exists
 
@@ -150,12 +150,11 @@ What your C testbench has to look like:
 
 ## 4. The c-to-verilog examples and SST
 
-[3mm](../examples/c-to-verilog/3mm/README.md#with-bambu-devpanda) and
-[3mm-v2](../examples/c-to-verilog/3mm-v2/README.md#with-bambu-devpanda) have a `bambu-devpanda-tb`
-set of targets next to the existing `bambu` and `bambu-verilog-tb` ones:
+The [3mm](../examples/c-to-verilog/3mm/README.md#pure-verilog-testbench) example has a
+`bambu-devpanda-tb` set of targets next to the existing `bambu` ones:
 
 ```bash
-cd examples/c-to-verilog/3mm-v2
+cd examples/c-to-verilog/3mm
 make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
   BAMBU_DEVPANDA=$HOME/bambu-devpanda/bin/bambu \
   VERILATOR_SST_SRC=/path/to/verilator-sst \
@@ -168,7 +167,7 @@ make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
 | `07_results.txt` | also simulates with Verilator (`<1\|0><TAB><cycles>`) |
 | `08_sst_results.txt` | runs the testbench under SST via verilator-sst (`<1\|0> <cycles>`) |
 
-Both examples pass in 26322 cycles natively and under SST. The scripts behind the targets:
+The example passes in 26322 cycles natively and under SST. The scripts behind the targets:
 [c_to_verilog_devpanda_tb.sh](../scripts/c_to_verilog_devpanda_tb.sh) (bambu; set `BAMBU_M`,
 `BAMBU_COMPILER` or `CLANG_BIN` if your setup differs) and
 [verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh), which also works on
@@ -227,7 +226,7 @@ plugin's 32-bit target. The `machine-bits` option was checked by hand.
 | Testbench input | XML test vector; expected outputs computed on the host | the C testbench; reference run natively |
 | Testbench option | `--testbench-style=dpi\|verilog\|both` | `--testbench-style=mdpi\|verilog` |
 | Interface pragma | `HLS_interface P0 m_axi direct` | `HLS interface port=P0 mode=m_axi ...` |
-| make targets | `bambu-verilog-tb` | `bambu-devpanda-tb` |
+| make targets | `bambu-verilog-tb` (PyTorch example only) | `bambu-devpanda-tb` |
 | Upstream-style DPI simulation on macOS | works (patched libmdpi) | not yet |
 
 Use the old branch for XML test vectors and C kernels you already run through it; use this one

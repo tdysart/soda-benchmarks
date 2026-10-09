@@ -28,36 +28,14 @@ Then run `make` again to execute the simulation which will verify the final veri
 
 ## Pure-Verilog testbench
 
-bambu's default testbench uses DPI-C. The `bambu-verilog-tb` targets instead
-generate a self-contained, pure-Verilog testbench (`--testbench-style=verilog`)
-that can run under verilator-sst. They use local tools, not the docker image:
-a bambu built from branch `feature/legacy-xml-testbench` of
-`tdysart/PandA-bambu`, passed as `BAMBU_VERILOG_TB`, and for the SST run a
-verilator-sst checkout (`VERILATOR_SST_SRC`) and the `sst` binary (`SST`).
-
-```sh
-make output/bambu-verilog-tb/baseline/08_sst_results.txt \
-  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu \
-  VERILATOR_SST_SRC=/path/to/verilator-sst \
-  SST=/path/to/sst-install/bin/sst
-```
-
-`07_results.txt` runs bambu's own Verilator simulation instead. The XML test vector
-is generated from `forward_kernel_testbench.c` with random inputs; pass
-`XML_ARGS="--seed 7"` and similar to change it, or `TEST_XML=<file>` to use
-your own.
-bambu computes the expected outputs by running `forward_kernel.c` on the host.
-See [c_to_verilog_verilog_tb.mk](../../../scripts/mkinc/c_to_verilog_verilog_tb.mk)
-and, for the SST run,
-[pytorch-to-verilog/3mm-no_weights](../../pytorch-to-verilog/3mm-no_weights/README.md#running-the-testbench-under-sst).
-
-### With bambu dev/panda
-
-The `bambu-devpanda-tb` targets do the same with the bambu on upstream's `dev/panda` branch
+bambu's default testbench uses DPI-C. The `bambu-devpanda-tb` targets instead generate a
+self-contained, DPI-free Verilog testbench (`--testbench-style=verilog`) that can run under
+verilator-sst.
+They use the bambu on upstream's `dev/panda` branch
 (branch `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which builds on macOS and
 has its own `--testbench-style=verilog`). They run this directory's C testbench
 (`forward_kernel_testbench.c`) natively to record the memory images and the reference results,
-and the Verilog testbench replays them, so no XML test vector is needed. The kernel declares
+and the Verilog testbench replays them. The kernel declares
 its `m_axi` interfaces in the form `dev/panda` reads, next to the older one.
 
 ```sh

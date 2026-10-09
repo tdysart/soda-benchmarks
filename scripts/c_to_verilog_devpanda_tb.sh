@@ -4,8 +4,7 @@
 #
 # Usage: c_to_verilog_devpanda_tb.sh <input.c> <testbench.c> <output.v>
 #
-# Unlike c_to_verilog_verilog_tb.sh (the XML test vector flow of the autotools port), this takes
-# the example's C testbench, the same file the MDPI flow uses: it is run natively to record the
+# This takes the example's C testbench, the same file the MDPI flow uses: it is run natively to record the
 # memory images and the reference results, and the Verilog testbench replays them. See
 # MACOS_PORT.md in the PandA-bambu branch spike/devpanda-macos-testbench.
 #

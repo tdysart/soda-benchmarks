@@ -1,8 +1,7 @@
 # This file provides rules to generate Verilog and simulate it with the DPI-free Verilog
-# testbench of bambu dev/panda (--testbench-style=verilog), from C. It is the dev/panda
-# counterpart of c_to_verilog_verilog_tb.mk: that one drives the older autotools port with an XML
-# test vector, this one uses the example's C testbench ($(SIMULATION_FILE_PATH)), run natively to
-# record the memory images and the reference results. Targets:
+# testbench of bambu dev/panda (--testbench-style=verilog), from C. It uses the example's C
+# testbench ($(SIMULATION_FILE_PATH)), run natively to record the memory images and the
+# reference results. Targets:
 #
 #   $(ODIR)/bambu-devpanda-tb/baseline/06_verilog.v    Verilog
 #   $(ODIR)/bambu-devpanda-tb/baseline/07_results.txt  also simulate with Verilator

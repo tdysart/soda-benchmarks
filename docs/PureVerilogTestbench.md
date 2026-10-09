@@ -9,6 +9,13 @@ now ported to bambu 2024 as `--testbench-style=verilog`, and the
 `bambu-verilog-tb` make targets run it end to end: HLS, testbench, bambu's own
 Verilator run, and a run under SST through verilator-sst.
 
+This page covers that XML-vector port, which the
+[PyTorch example](#3-the-pytorch-example) uses. For C kernels, and for the
+soda-plugins dataflow designs, use bambu `dev/panda` instead
+([BambuDevPanda.md](BambuDevPanda.md)): it needs no XML test vector, and the
+c-to-verilog examples use it. That is the recommended flow; see
+[section 4](#4-bambu-devpanda-including-dataflow-designs-experimental).
+
 This page ties together the pieces needed to reproduce that from scratch on
 macOS/arm64. The details live in the linked READMEs.
 
@@ -35,7 +42,7 @@ Verified on macOS 26 (arm64) with Homebrew:
   `sst-config` must be in the same directory.
 * Python 3
 * For the MLIR/PyTorch example only: LLVM 19.1 tools, soda-opt and torch-mlir
-  (see [step 4](#4-the-pytorch-example)). The C examples need none of these.
+  (see [step 3](#3-the-pytorch-example)). The C examples need none of these.
 
 ## Toolchain versions
 
@@ -98,33 +105,13 @@ obj/src/bambu --help | grep -A2 testbench-style
 
 ```sh
 git clone -b tjd-verilator-sst git@github.com:tdysart/soda-benchmarks.git
-cd soda-benchmarks/examples/c-to-verilog/3mm-v2
 git clone -b feature/mdpi-testbench-support git@github.com:tactcomplabs/verilator-sst.git
 ```
 
-The examples below pass this checkout as `VERILATOR_SST_SRC`. Any location
-works.
+The examples below pass the verilator-sst checkout as `VERILATOR_SST_SRC`. Any
+location works.
 
-## 3. A C example
-
-The quickest check needs no MLIR tools. From `examples/c-to-verilog/3mm`:
-
-```sh
-make output/bambu-verilog-tb/baseline/08_sst_results.txt \
-  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu \
-  VERILATOR_SST_SRC=$PWD/../3mm-v2/verilator-sst \
-  SST=/path/to/sst-install/bin/sst
-```
-
-This synthesizes `forward_kernel.c` for nangate45 at 5 ns, and generates the
-testbench from an XML test vector built from `forward_kernel_testbench.c`.
-bambu computes the expected outputs by running the C on the host. The make
-then builds the testbench into a verilator-sst component and runs it under
-SST. Expect `verilator-sst: PASS in 12122 cycles`. `07_results.txt` runs
-bambu's own Verilator simulation instead, with the same count. See the
-example's [README](../examples/c-to-verilog/3mm/README.md).
-
-## 4. The PyTorch example
+## 3. The PyTorch example
 
 [examples/pytorch-to-verilog/3mm-no_weights](../examples/pytorch-to-verilog/3mm-no_weights/README.md)
 runs a PyTorch model through torch-mlir and soda-opt to LLVM IR, then through
@@ -148,7 +135,7 @@ arguments' element types out of the IR, so
 [testbench_to_xml.py](../scripts/testbench_to_xml.py) also writes an
 `architecture.xml` (`float*` and so on) that the flow passes to bambu.
 
-## 5. Bambu `dev/panda`, including dataflow designs (experimental)
+## 4. Bambu `dev/panda`, including dataflow designs (experimental)
 
 Upstream bambu development is on `dev/panda`, which replaced the testbench the port above
 builds on, and is the only bambu that accepts the soda-plugins dataflow designs (FIFOs between
@@ -170,7 +157,7 @@ VERILATOR_SST_SRC=/path/to/verilator-sst SST=/path/to/sst \
 
 The c-to-verilog examples have make targets for the whole chain
 (`make output/bambu-devpanda-tb/baseline/08_sst_results.txt BAMBU_DEVPANDA=... VERILATOR_SST_SRC=... SST=...`,
-see [3mm-v2](../examples/c-to-verilog/3mm-v2/README.md#with-bambu-devpanda)); they use the example's C
+see [3mm](../examples/c-to-verilog/3mm/README.md#pure-verilog-testbench)); they use the example's C
 testbench and `m_axi` pragmas in the `dev/panda` syntax.
 
 It expects `verilator-sst: PASS in <N> cycles`, the same count bambu reports natively, and exits
@@ -188,7 +175,8 @@ bambu; see [examples/soda-plugins](../examples/soda-plugins/README.md).
 * **The default (DPI) `bambu/...` targets fail with `readlink: illegal option -- e`.**
   bambu's DPI simulation script needs GNU coreutils first on `PATH`:
   `export PATH=/opt/homebrew/opt/coreutils/libexec/gnubin:$PATH`. The
-  `bambu-verilog-tb` targets don't need it.
+  `bambu-verilog-tb` targets don't need it, but the `bambu-devpanda-tb` ones set up
+  their own GNU shims.
 * **`stdio.h` not found while bambu compiles.** Export
   `SDKROOT=$(xcrun --show-sdk-path)`. The scripts do this, but a hand-run
   bambu needs it too.
