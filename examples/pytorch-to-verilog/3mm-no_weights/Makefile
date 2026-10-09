@@ -52,6 +52,4 @@ include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
 # The testbench of the dev/panda flow: a C driver that also defines forward_kernel, the reference
 # model of the generated hardware (soda-opt's own testbench has none, so it is not used here).
 SIMULATION_FILE_PATH=forward_kernel_testbench.c
-# The asap7 device files do not load in the dev/panda bambu yet.
-BAMBU_DEVPANDA_DEVICE=nangate45
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_devpanda_tb.mk

@@ -16,8 +16,6 @@
 # Local tools only (no docker). Override on the command line or environment:
 #   BAMBU_DEVPANDA     the dev/panda bambu (an installed one: its settings are found from its path)
 #   BAMBU_COMPILER     bambu --compiler (default I386_CLANG19)    CLANG_BIN  directory of that clang
-#   BAMBU_DEVPANDA_DEVICE  target device (default $(BAMBU_DEVICE)); the asap7 device files do not
-#                      load in the dev/panda build yet, so set nangate45 if BAMBU_DEVICE is asap7
 #   VERILATOR_SST_SRC  verilator-sst checkout     SST  sst binary
 #   SST_CYCLES         clock cycles for the SST run (see verilator_sst_devpanda_tb.sh)
 #
@@ -27,7 +25,7 @@
 LL_DEVPANDA_TB_SETTINGS = \
   BAMBU_DEVPANDA=$(or $(BAMBU_DEVPANDA),bambu) \
   BAMBU_COMPILER=$(or $(BAMBU_COMPILER),I386_CLANG19) \
-  BAMBU_DEVICE=$(or $(BAMBU_DEVPANDA_DEVICE),$(BAMBU_DEVICE)) \
+  BAMBU_DEVICE=$(BAMBU_DEVICE) \
   BAMBU_CLOCK_PERIOD=$(BAMBU_CLOCK_PERIOD) \
   BAMBU_MEMPOLICY=$(BAMBU_MEMPOLICY) \
   $(if $(CLANG_BIN),CLANG_BIN=$(CLANG_BIN))

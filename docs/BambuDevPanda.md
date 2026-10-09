@@ -17,7 +17,7 @@ the macOS port, are in `MACOS_PORT.md` at its root.
 | C and LLVM IR input to Verilog, including soft-float | Internal memory-mapped globals in the testbench |
 | `--testbench-style=verilog` with Verilator: array, scalar-port and `m_axi` interfaces, several calls per testbench | Top-level FIFO/AXIS/channel interfaces and return values in the testbench |
 | The soda-plugins dataflow design `forward` (FIFOs between nodes), simulated and run under SST | Simulators other than Verilator |
-| `make ...bambu-devpanda-tb/...` targets for `3mm`, natively and under SST | The OpenROAD patch step (`patch_openroad_synt.sh`) for the generated Verilog; the `asap7-*` devices (their device files fail to parse, use `nangate45`) |
+| `make ...bambu-devpanda-tb/...` targets for `3mm`, natively and under SST | The OpenROAD patch step (`patch_openroad_synt.sh`) for the generated Verilog |
 
 ## Why this branch exists
 
@@ -163,7 +163,7 @@ make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
 | `07_results.txt` | also simulates with Verilator (`<1\|0><TAB><cycles>`) |
 | `08_sst_results.txt` | runs the testbench under SST via verilator-sst (`<1\|0> <cycles>`) |
 
-The C example passes in 26322 cycles natively and under SST, the PyTorch one in 23160. The scripts behind the targets:
+The C example passes in 26322 cycles natively and under SST, the PyTorch one (asap7-BC) in 10184. The scripts behind the targets:
 [c_to_verilog_devpanda_tb.sh](../scripts/c_to_verilog_devpanda_tb.sh) (bambu; set `BAMBU_M`,
 `BAMBU_COMPILER` or `CLANG_BIN` if your setup differs) and
 [verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh), which also works on

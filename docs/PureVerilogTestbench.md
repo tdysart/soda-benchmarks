@@ -113,8 +113,8 @@ make output/bambu-devpanda-tb/transformed/08_sst_results.txt \
 This needs soda-opt and LLVM 19.1's `mlir-opt`, `mlir-translate` and `opt` on
 `PATH`, plus torch-mlir's Python package on `PYTHONPATH`.
 [setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh) builds a
-torch-mlir that matches LLVM 19.1. Expect `verilator-sst: PASS in 23160 cycles`
-(nangate45, 5 ns).
+torch-mlir that matches LLVM 19.1. Expect `verilator-sst: PASS in 10184 cycles`
+(asap7-BC, 5 ns).
 
 The IR has no C source to run natively, so the example's own
 `forward_kernel_testbench.c` defines `forward_kernel` as the reference model
@@ -148,9 +148,10 @@ bambu; see [examples/soda-plugins](../examples/soda-plugins/README.md).
   `--timescale-override 1ps/1ps`, which the SST scripts pass, and needs the
   verilator-sst branch above. See also the troubleshooting list in
   [BambuDevPanda.md](BambuDevPanda.md#troubleshooting).
-* **`syntax error ... Error in parsing xml ... asap7-BC.spec_data`.** The asap7
-  device files do not load in the `dev/panda` build yet; use
-  `--device=nangate45` (the examples do).
+* **`syntax error ... Error in parsing xml ... asap7-BC.spec_data`.** The device
+  files were merged by an older `etc/scripts/append_libraries.sh` that dropped
+  a closing tag on macOS. Rebuild from a `spike/devpanda-macos-testbench` that has
+  the fix (commit `e83a886df` or later).
 * **`stdio.h` not found while bambu compiles.** Export
   `SDKROOT=$(xcrun --show-sdk-path)`. The scripts do this, but a hand-run
   bambu needs it too.

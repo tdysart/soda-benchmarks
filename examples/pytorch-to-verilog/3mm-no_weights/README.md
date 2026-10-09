@@ -72,9 +72,8 @@ tiled kernel adds them in, and the check is bit for bit. The shapes in it
 generated `output/forward_kernel_testbench.c` has no reference model, so it is
 not used.
 
-The target device is `nangate45` (`BAMBU_DEVPANDA_DEVICE` in the Makefile): the
-asap7 device files do not load in the `dev/panda` bambu yet. Expect 23160
-cycles.
+The target device is the Makefile's `BAMBU_DEVICE` (asap7-BC at 5 ns). Expect
+10184 cycles.
 
 
 ## Running the testbench under SST
