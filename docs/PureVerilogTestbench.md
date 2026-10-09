@@ -50,7 +50,6 @@ flow itself need only bambu and `llvm@19`.
 | TensorFlow MLIR tools (`tf-opt`, `tf-mlir-translate`, `flatbuffer_translate`) | their own LLVM, `acc159aea1e6` (2024-07-23, the `release/19.x` branch point), TF commit `d7f515cc2fd8` | TFLite and TensorFlow examples (`tflite_to_tosa.sh`, `graphdef_to_tosa.sh`); chosen so the TOSA output parses with LLVM 19.1's `mlir-opt` ([setup-tensorflow-mlir.sh](../scripts/external/setup-tensorflow-mlir.sh), [guide](ModelConversionTools.md)) |
 | bambu `dev/panda` | Homebrew `llvm@19` (`--compiler=I386_CLANG19`) | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, which clang 16 cannot |
 | Verilator, SST, verilator-sst | none | the SST runs |
-| bambu v2023.1, llvm-cbe | `llvm@14`; llvm-cbe against LLVM 19.1.5 | only the [reference flow](../scripts/reference/bambu2023/README.md) |
 
 soda-opt is what sets LLVM 19.1.5. Its README says it was tested with
 llvm-project commit `ab4b5a2db582958af1ee308a790cfdb42bd24720`, which is the
@@ -160,6 +159,3 @@ bambu; see [examples/soda-plugins](../examples/soda-plugins/README.md).
 
 * The bambu branch's own notes: `MACOS_PORT.md` in `spike/devpanda-macos-testbench`.
 * The scripts: [scripts/README.md](../scripts/README.md).
-* An earlier route to a pure-Verilog testbench, bambu v2023.1 by way of
-  llvm-cbe, kept for reference:
-  [scripts/reference/bambu2023](../scripts/reference/bambu2023/README.md).

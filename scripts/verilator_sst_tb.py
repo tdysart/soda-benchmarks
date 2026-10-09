@@ -2,15 +2,13 @@
 # verilator_sst_tb.py
 #
 # SST configuration that runs bambu's self-contained, pure-Verilog (non-DPI)
-# testbench under verilator-sst. Used by verilator_sst.sh.
+# testbench under verilator-sst. Used by verilator_sst_devpanda_tb.sh.
 #
-# bambu's --generate-tb=<file.xml> testbench (testbench_<kernel>_tb.v) is a
-# top module whose only port is `clock`. All stimulus, memory and result
-# checking live inside it, so this only toggles the clock through a
-# VerilatorTestLink. The testbench writes its pass/fail and cycle count to the
-# results.txt path baked into it when bambu generated it.
-#
-# Adapted from run_forwardKernelTB_v2023.py of the former examples/c-to-verilog/3mm-v2 (see git history).
+# bambu's --testbench-style=verilog testbench (bambu_testbench) is a top
+# module whose only port is `clock`. All stimulus, memory and result checking
+# live inside it, so this only toggles the clock through a VerilatorTestLink.
+# The testbench writes its pass/fail and cycle count to
+# bambu_time_simulation.txt in the working directory.
 #
 # Usage:
 #   sst verilator_sst_tb.py -- --build-dir <verilator-sst build> [--device forwardKernelTB] [--cycles N]

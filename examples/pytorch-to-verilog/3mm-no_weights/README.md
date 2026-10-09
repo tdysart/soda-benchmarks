@@ -101,6 +101,3 @@ By default it runs bambu's simulated cycle count plus 10%; set `SST_CYCLES` to
 override. The SST configuration is
 [verilator_sst_tb.py](../../../scripts/verilator_sst_tb.py), driven by
 [verilator_sst_devpanda_tb.sh](../../../scripts/verilator_sst_devpanda_tb.sh).
-
-The earlier route to a pure-Verilog testbench, bambu v2023.1 by way of llvm-cbe, is
-kept for reference in [scripts/reference/bambu2023](../../../scripts/reference/bambu2023/README.md).

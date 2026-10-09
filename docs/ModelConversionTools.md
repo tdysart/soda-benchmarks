@@ -179,4 +179,4 @@ the same tools inside the `agostini01/soda` image instead, and nothing here is n
   the script (and expect to revisit the macOS workarounds above) in that case. The
   torch-mlir equivalent is `TORCH_MLIR_COMMIT`.
 * **Need to change TensorFlow itself:** keep a small patch file in `scripts/external/` and apply
-  it in the script, as for llvm-cbe, rather than maintaining a fork.
+  it in the script rather than maintaining a fork.
