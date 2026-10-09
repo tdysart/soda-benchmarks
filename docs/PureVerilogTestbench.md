@@ -156,8 +156,8 @@ bambu; see [examples/soda-plugins](../examples/soda-plugins/README.md).
   [BambuDevPanda.md](BambuDevPanda.md#troubleshooting).
 * **`syntax error ... Error in parsing xml ... asap7-BC.spec_data`.** The device
   files were merged by an older `etc/scripts/append_libraries.sh` that dropped
-  a closing tag on macOS. Rebuild from a `spike/devpanda-macos-testbench` that has
-  the fix (commit `e83a886df` or later).
+  a closing tag on macOS. Rebuild from the current `spike/devpanda-macos-testbench`,
+  whose commit "append_libraries.sh: fix the merged device files on macOS" has the fix.
 * **`stdio.h` not found while bambu compiles.** Export
   `SDKROOT=$(xcrun --show-sdk-path)`. The scripts do this, but a hand-run
   bambu needs it too.

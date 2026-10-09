@@ -241,3 +241,8 @@ libbambu, BSD tool differences), then the testbench style (`BambuParameter.cpp`,
 `NC_TESTBENCH_IPs.xml`, the `verilator_verilog` backend directory) and the regression. To follow
 upstream, rebase onto `upstream/dev/panda`; the places most likely to conflict are the CMake files
 and `NC_TESTBENCH_IPs.xml`. Re-run the regression afterwards.
+The branch is rebased, not merged, so its history is rewritten on each sync: push it with
+`git push --force-with-lease`, and keep a local backup branch of the old tip first. After a
+rebase, rebuild, re-run the regression, and run both examples through SST (`3mm` and the PyTorch
+`3mm-no_weights`); the last sync (onto `47ca8ff4b`) left the cycle counts unchanged at 26322 and
+10184.
