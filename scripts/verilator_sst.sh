@@ -4,8 +4,7 @@
 #
 # Usage: verilator_sst.sh <bambu_dir/06_verilog.v> <output_results.txt>
 #
-# <bambu_dir> is an output directory of ll_to_verilog_verilog_tb.sh
-# (bambu 2024, --testbench-style=verilog) or of the reference bambu v2023.1
+# <bambu_dir> is an output directory of the reference bambu v2023.1
 # flow (scripts/reference/bambu2023/c_to_verilog_bambu2023.sh). Its
 # forward_kernel.v and HLS_output/simulation/testbench_forward_kernel_tb.v are
 # staged into <bambu_dir>/verilator-sst/verilog (on their own: bambu's
@@ -63,7 +62,7 @@ WORK_DIR="$BAMBU_DIR/verilator-sst"
 
 for f in "$BAMBU_DIR/forward_kernel.v" "$TESTBENCH"; do
   if [ ! -f "$f" ]; then
-    echo "ERROR: $f not found; run ll_to_verilog_verilog_tb.sh first." >&2
+    echo "ERROR: $f not found; run the bambu2023 reference flow first." >&2
     exit 1
   fi
 done

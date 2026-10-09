@@ -19,12 +19,11 @@ ODIR=output
 TARGET=$(ODIR)/bambu/transformed/06_verilog.v
 # TARGET=$(ODIR)/bambu/transformed/07_results.txt # For simulation results
 
-# Pure-Verilog (non-DPI) testbench, with a bambu that has
-# --testbench-style=verilog. Local tools only; see
-# scripts/mkinc/llvm_to_verilog_verilog_tb.mk.
-# TARGET=$(ODIR)/bambu-verilog-tb/transformed/06_verilog.v
-# TARGET=$(ODIR)/bambu-verilog-tb/transformed/07_results.txt # For simulation results
-# TARGET=$(ODIR)/bambu-verilog-tb/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
+# DPI-free testbench of bambu dev/panda, run from the C testbench below. Local tools only; see
+# scripts/mkinc/llvm_to_verilog_devpanda_tb.mk.
+# TARGET=$(ODIR)/bambu-devpanda-tb/transformed/06_verilog.v
+# TARGET=$(ODIR)/bambu-devpanda-tb/transformed/07_results.txt # For simulation results
+# TARGET=$(ODIR)/bambu-devpanda-tb/transformed/08_sst_results.txt # Run it under SST (verilator-sst)
 
 all: $(TARGET)
 
@@ -49,4 +48,10 @@ BAMBU_DEVICE=asap7-BC
 # BAMBU_DEVICE=nangate45
 BAMBU_CLOCK_PERIOD=5
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
-include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_verilog_tb.mk
+
+# The testbench of the dev/panda flow: a C driver that also defines forward_kernel, the reference
+# model of the generated hardware (soda-opt's own testbench has none, so it is not used here).
+SIMULATION_FILE_PATH=forward_kernel_testbench.c
+# The asap7 device files do not load in the dev/panda bambu yet.
+BAMBU_DEVPANDA_DEVICE=nangate45
+include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_devpanda_tb.mk

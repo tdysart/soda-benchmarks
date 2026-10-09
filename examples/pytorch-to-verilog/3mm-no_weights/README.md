@@ -29,12 +29,11 @@ The `<strategy>` can be either `baseline` or `optimized`, and is determined by t
     ├── 04_llvm_<strategy>.mlir
     ├── 05_llvm_<strategy>.ll // LLVM IR file
     ├── bambu/<strategy>/06_verilog.v
-    └── bambu-verilog-tb/<strategy>/  // see below
-        ├── test.xml           // bambu XML test vector (inputs)
-        ├── architecture.xml   // C types of the kernel arguments
+    └── bambu-devpanda-tb/<strategy>/  // see below
         ├── 06_verilog.v
         ├── 07_results.txt     // simulated cycle count
-        ├── HLS_output/simulation/testbench_forward_kernel_tb.v
+        ├── tb_init.mem, tb_expected.mem // memory images recorded from the C testbench
+        ├── HLS_output/simulation/bambu_testbench.v
         ├── 08_sst_results.txt // same, from the run under SST
         └── verilator-sst/     // staged Verilog, verilator-sst build, sst-run.log
 ```
@@ -43,38 +42,39 @@ The `<strategy>` can be either `baseline` or `optimized`, and is determined by t
 # Pure-Verilog Testbench
 
 bambu's default testbench uses DPI-C. With `--testbench-style=verilog`, bambu
-instead generates a self-contained, pure-Verilog testbench from an XML test
-vector (`--generate-tb=<file.xml>`), the one bambu v2023.1 and earlier
-generated. It can run under verilator-sst without a hand-written testbench.
-The `bambu-verilog-tb` targets produce it.
+instead generates a self-contained, DPI-free Verilog testbench that can run
+under verilator-sst. The `bambu-devpanda-tb` targets produce it.
 
 `--testbench-style` is not in upstream bambu yet: it comes from branch
-`feature/legacy-xml-testbench` of `tdysart/PandA-bambu`. This path uses local
-tools only, not the docker image:
+`spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which is upstream's
+`dev/panda` built on macOS ([guide](../../../docs/BambuDevPanda.md)). This path
+uses local tools only, not the docker image:
 
-* bambu built from that branch, passed as `BAMBU_VERILOG_TB`
+* bambu built from that branch, passed as `BAMBU_DEVPANDA`
 * torch-mlir, soda-opt, `mlir-opt`/`mlir-translate`/`opt` on `PATH` (and
   torch-mlir's python package on `PYTHONPATH`) for the earlier steps. For
   LLVM 19.1, [setup-torch-mlir.sh](../../../scripts/external/setup-torch-mlir.sh)
   builds a matching torch-mlir.
 
 ```sh
-make output/bambu-verilog-tb/transformed/07_results.txt \
-  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu
+make output/bambu-devpanda-tb/transformed/07_results.txt \
+  BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu
 ```
 
-[testbench_to_xml.py](../../../scripts/testbench_to_xml.py) builds `test.xml`
-from soda-opt's `forward_kernel_testbench.c`: random inputs, and zeros for the
-last argument (the output). Pass `XML_ARGS="--seed 7"` and similar to change
-it. The XML holds inputs only; bambu runs `05_llvm_<strategy>.ll` on the host
-to get the expected outputs. The script also writes `architecture.xml`, passed
-to bambu as `--architecture-xml`, because opaque pointers leave the
-arguments' element types (`float*`) out of the IR.
-(`testbench_to_xml.py --expected-from` can still put host-computed outputs
-into the XML, e.g. to cross-check bambu.)
+[forward_kernel_testbench.c](forward_kernel_testbench.c) is the C testbench.
+bambu runs it natively to record the memory images and the reference results,
+and the Verilog testbench replays them. The IR has no C source to run, so this
+file also defines `forward_kernel` (three chained matrix products, in single
+precision) as the reference model the hardware is compared with. The inputs
+are small multiples of 0.25 or 0.5, so the sums are exact whatever order the
+tiled kernel adds them in, and the check is bit for bit. The shapes in it
+(`M`, `K`, `L`, `P`, `N`) must match those in `torchscript.py`. soda-opt's own
+generated `output/forward_kernel_testbench.c` has no reference model, so it is
+not used.
 
-The testbench opens `HLS_output/simulation/values.txt` and `results.txt`
-relative to the output directory, so run it from there.
+The target device is `nangate45` (`BAMBU_DEVPANDA_DEVICE` in the Makefile): the
+asap7 device files do not load in the `dev/panda` bambu yet. Expect 23160
+cycles.
 
 
 ## Running the testbench under SST
@@ -90,17 +90,17 @@ component and runs it under SST. It needs:
   directory.
 
 ```sh
-make output/bambu-verilog-tb/transformed/08_sst_results.txt \
-  BAMBU_VERILOG_TB=/path/to/PandA-bambu/obj/src/bambu \
+make output/bambu-devpanda-tb/transformed/08_sst_results.txt \
+  BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu \
   VERILATOR_SST_SRC=/path/to/verilator-sst \
   SST=/path/to/sst-install/bin/sst
 ```
 
 The run fails if the testbench reports a mismatch or doesn't finish.
-By default it runs bambu's simulated cycle count plus 10% (from
-`07_results.txt` if you built it), or 40000 cycles; set `SST_CYCLES` to
+By default it runs bambu's simulated cycle count plus 10%; set `SST_CYCLES` to
 override. The SST configuration is
-[verilator_sst_tb.py](../../../scripts/verilator_sst_tb.py).
+[verilator_sst_tb.py](../../../scripts/verilator_sst_tb.py), driven by
+[verilator_sst_devpanda_tb.sh](../../../scripts/verilator_sst_devpanda_tb.sh).
 
-The earlier route to the same testbench, bambu v2023.1 by way of llvm-cbe, is
+The earlier route to a pure-Verilog testbench, bambu v2023.1 by way of llvm-cbe, is
 kept for reference in [scripts/reference/bambu2023](../../../scripts/reference/bambu2023/README.md).

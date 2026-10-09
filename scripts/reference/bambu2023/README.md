@@ -1,11 +1,11 @@
 # Reference: pure-Verilog testbench with bambu v2023.1
 
-Kept for reference only. bambu 2024 built from branch
-`feature/legacy-xml-testbench` of `tdysart/PandA-bambu` generates the same
+Kept for reference only. bambu `dev/panda` built from branch
+`spike/devpanda-macos-testbench` of `tdysart/PandA-bambu` generates a DPI-free
 testbench with `--testbench-style=verilog`, straight from soda-opt's IR (see
-[llvm_to_verilog_verilog_tb.mk](../../mkinc/llvm_to_verilog_verilog_tb.mk)).
+[llvm_to_verilog_devpanda_tb.mk](../../mkinc/llvm_to_verilog_devpanda_tb.mk)).
 This older route was the proof of concept that showed the v2023.1 testbench
-works under verilator-sst, before it was ported.
+works under verilator-sst.
 
 bambu v2023.1 generates a self-contained, pure-Verilog testbench from an XML
 test vector (`--generate-tb=<file.xml>`). Its only front end is clang 13, which

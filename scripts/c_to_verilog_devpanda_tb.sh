@@ -1,12 +1,15 @@
 #!/bin/bash
-# Synthesize a C kernel with bambu dev/panda and run its C testbench through the DPI-free
-# Verilog testbench of --testbench-style=verilog.
+# Synthesize a C kernel (or LLVM IR) with bambu dev/panda and run its C testbench through the
+# DPI-free Verilog testbench of --testbench-style=verilog.
 #
-# Usage: c_to_verilog_devpanda_tb.sh <input.c> <testbench.c> <output.v>
+# Usage: c_to_verilog_devpanda_tb.sh <input.c|input.ll> <testbench.c> <output.v>
 #
 # This takes the example's C testbench, the same file the MDPI flow uses: it is run natively to record the
 # memory images and the reference results, and the Verilog testbench replays them. See
 # MACOS_PORT.md in the PandA-bambu branch spike/devpanda-macos-testbench.
+#
+# For LLVM IR input there is no C to run natively as the reference model, so the testbench file
+# must define the top function itself (see ll_to_verilog_devpanda_tb.sh).
 #
 # <input.c> must declare its interfaces with the dev/panda pragma syntax
 # (#pragma HLS interface port=P0 mode=m_axi offset=direct bundle=gmem0); the older
@@ -84,7 +87,8 @@ TESTBENCH="$(cd "$(dirname "$2")" && pwd)/$(basename "$2")"
 mkdir -p "$(dirname "$3")"
 OUTPUT_DIR="$(cd "$(dirname "$3")" && pwd)"
 
-cp "$1" "$OUTPUT_DIR/input.c"
+INPUT_EXT="${1##*.}"
+cp "$1" "$OUTPUT_DIR/input.$INPUT_EXT"
 pushd "$OUTPUT_DIR"
 
 SIMULATION_ARGS=""
@@ -104,7 +108,7 @@ fi
 	--generate-interface=INFER \
 	$SIMULATION_ARGS \
 	--top-fname=$BAMBU_TOP \
-	input.c 2>&1 | tee bambu-log
+	input.$INPUT_EXT 2>&1 | tee bambu-log
 
 cp $BAMBU_TOP.v 06_verilog.v
 

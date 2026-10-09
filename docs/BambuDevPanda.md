@@ -17,18 +17,15 @@ the macOS port, are in `MACOS_PORT.md` at its root.
 | C and LLVM IR input to Verilog, including soft-float | Internal memory-mapped globals in the testbench |
 | `--testbench-style=verilog` with Verilator: array, scalar-port and `m_axi` interfaces, several calls per testbench | Top-level FIFO/AXIS/channel interfaces and return values in the testbench |
 | The soda-plugins dataflow design `forward` (FIFOs between nodes), simulated and run under SST | Simulators other than Verilator |
-| `make ...bambu-devpanda-tb/...` targets for `3mm`, natively and under SST | The OpenROAD patch step (`patch_openroad_synt.sh`) for the generated Verilog |
+| `make ...bambu-devpanda-tb/...` targets for `3mm`, natively and under SST | The OpenROAD patch step (`patch_openroad_synt.sh`) for the generated Verilog; the `asap7-*` devices (their device files fail to parse, use `nangate45`) |
 
 ## Why this branch exists
 
 * Upstream's `main` has not moved since April 2025; development is on `dev/panda`.
 * `dev/panda` is the first bambu that accepts what the soda-plugins dataflow lowering emits: the
   `array_dims` attribute in `--architecture-xml`, and the unified `ac_channel.h` (channel accesses
-  are `_read_bambu_internal`/`_write_bambu_internal`, with no nested `fifo` class). The earlier
-  bambu with the testbench port (`feature/legacy-xml-testbench`, based on `main`) has neither.
-* `dev/panda` replaced autotools with CMake and removed the C++ simulation classes that port was
-  built on, so it cannot be merged in. The macOS fixes and the testbench style were redone on top
-  of `dev/panda` instead.
+  are `_read_bambu_internal`/`_write_bambu_internal`, with no nested `fifo` class). The bambu
+  based on upstream `main` has neither.
 
 ## Repositories
 
@@ -38,9 +35,7 @@ the macOS port, are in `MACOS_PORT.md` at its root.
 | [tdysart/soda-benchmarks](https://github.com/tdysart/soda-benchmarks) | `tjd-verilator-sst` | this repo: the scripts, make targets and examples that drive it |
 | [tactcomplabs/verilator-sst](https://github.com/tactcomplabs/verilator-sst) | `feature/mdpi-testbench-support` | builds the testbench into an SST component |
 
-The older `feature/legacy-xml-testbench` branch of PandA-bambu is the autotools-based port of the
-XML-vector testbench described in [PureVerilogTestbench.md](PureVerilogTestbench.md). The two
-branches are independent; the table at the end of this page compares them.
+[PureVerilogTestbench.md](PureVerilogTestbench.md) ties the three together for a from-scratch run.
 
 ## Prerequisites
 
@@ -150,8 +145,9 @@ What your C testbench has to look like:
 
 ## 4. The c-to-verilog examples and SST
 
-The [3mm](../examples/c-to-verilog/3mm/README.md#pure-verilog-testbench) example has a
-`bambu-devpanda-tb` set of targets next to the existing `bambu` ones:
+The [3mm](../examples/c-to-verilog/3mm/README.md#pure-verilog-testbench) C example and the
+[PyTorch 3mm](../examples/pytorch-to-verilog/3mm-no_weights/README.md#pure-verilog-testbench)
+example have a `bambu-devpanda-tb` set of targets next to the existing `bambu` ones:
 
 ```bash
 cd examples/c-to-verilog/3mm
@@ -167,7 +163,7 @@ make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
 | `07_results.txt` | also simulates with Verilator (`<1\|0><TAB><cycles>`) |
 | `08_sst_results.txt` | runs the testbench under SST via verilator-sst (`<1\|0> <cycles>`) |
 
-The example passes in 26322 cycles natively and under SST. The scripts behind the targets:
+The C example passes in 26322 cycles natively and under SST, the PyTorch one in 23160. The scripts behind the targets:
 [c_to_verilog_devpanda_tb.sh](../scripts/c_to_verilog_devpanda_tb.sh) (bambu; set `BAMBU_M`,
 `BAMBU_COMPILER` or `CLANG_BIN` if your setup differs) and
 [verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh), which also works on
@@ -214,23 +210,6 @@ It sets up the GNU shims itself and needs the install, Verilator and `llvm@19`.
 The plugin's own tests (`check-sodap`) skip the Bambu-dependent cases (`REQUIRES: panda`) here:
 they need `SODAP_BAMBU_ROOT`, whose defaults assume a `compilers/clang-19` directory and the
 plugin's 32-bit target. The `machine-bits` option was checked by hand.
-
-## 7. Compared with the autotools port
-
-| | `feature/legacy-xml-testbench` | `spike/devpanda-macos-testbench` |
-|---|---|---|
-| Based on | `upstream/main` (2025) | `upstream/dev/panda` |
-| Build | autotools | CMake |
-| Compiler | Homebrew `llvm@16`, `I386_CLANG16` | Homebrew `llvm@19`, `I386_CLANG19`, `-m64` |
-| Dataflow designs (`array_dims`, new `ac_channel.h`) | no | yes |
-| Testbench input | XML test vector; expected outputs computed on the host | the C testbench; reference run natively |
-| Testbench option | `--testbench-style=dpi\|verilog\|both` | `--testbench-style=mdpi\|verilog` |
-| Interface pragma | `HLS_interface P0 m_axi direct` | `HLS interface port=P0 mode=m_axi ...` |
-| make targets | `bambu-verilog-tb` (PyTorch example only) | `bambu-devpanda-tb` |
-| Upstream-style DPI simulation on macOS | works (patched libmdpi) | not yet |
-
-Use the old branch for XML test vectors and C kernels you already run through it; use this one
-for dataflow designs and anything that needs `dev/panda`.
 
 ## Troubleshooting
 
