@@ -24,3 +24,8 @@ include $(SCRIPTS_DIR)/mkinc/tosa_to_llvm.mk
 
 # Include the rules to generate graph from a mlir file
 include $(SCRIPTS_DIR)/mkinc/mlir_to_graph.mk
+
+# Lower with soda-opt and run through the DPI-free Verilog testbench of bambu dev/panda; see
+# scripts/mkinc/model_devpanda_tb.mk. For example:
+#   make output/bambu-devpanda-tb/baseline/07_results.txt
+include $(SCRIPTS_DIR)/mkinc/model_devpanda_tb.mk

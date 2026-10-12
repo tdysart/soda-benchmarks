@@ -20,3 +20,8 @@ $(ODIR)/01_tosa.mlir: $(FILE_PATH)
 
 # Include the rules to generate linalg from a torch model translated to linalg
 include $(SCRIPTS_DIR)/mkinc/tosa_to_llvm.mk
+
+# Lower with soda-opt and run through the DPI-free Verilog testbench of bambu dev/panda; see
+# scripts/mkinc/model_devpanda_tb.mk. For example:
+#   make output/bambu-devpanda-tb/baseline/07_results.txt
+include $(SCRIPTS_DIR)/mkinc/model_devpanda_tb.mk

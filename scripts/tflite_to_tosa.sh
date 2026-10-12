@@ -42,7 +42,11 @@ tf-opt \
   -o $OUTPUT_PATH
 
 # Replace dynamic dimensions (?) with 1 and rename main to forward
-sed -i 's/?/1/g' $OUTPUT_PATH
-sed -i 's/main/forward/g' $OUTPUT_PATH
+sed -i.bak 's/?/1/g' $OUTPUT_PATH && rm -f $OUTPUT_PATH.bak
+sed -i.bak 's/main/forward/g' $OUTPUT_PATH && rm -f $OUTPUT_PATH.bak
+
+# tf-opt prints the infer-this-dimension marker of tosa.reshape as the dynamic-dimension sentinel
+# (INT64_MIN); the soda-opt LLVM expects -1.
+sed -i.bak 's/-9223372036854775808/-1/g' $OUTPUT_PATH && rm -f $OUTPUT_PATH.bak
 
 set +x

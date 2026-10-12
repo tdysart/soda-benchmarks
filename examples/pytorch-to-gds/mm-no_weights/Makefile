@@ -48,3 +48,8 @@ include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
 
 # Include rules to generate gds files with openroad
 include $(SCRIPTS_DIR)/mkinc/verilog_to_gds.mk
+
+# Lower with soda-opt and run through the DPI-free Verilog testbench of bambu dev/panda; see
+# scripts/mkinc/model_devpanda_tb.mk. For example:
+#   make output/bambu-devpanda-tb/baseline/07_results.txt
+include $(SCRIPTS_DIR)/mkinc/model_devpanda_tb.mk

@@ -30,7 +30,12 @@
 #   BAMBU_M               word size flag (default: -m64 on macOS, where clang has no 32-bit target)
 #   CLANG_BIN             directory with the clang named by --compiler (default: Homebrew llvm@19)
 #   BAMBU_RUN_SIMULATION  true to also simulate with Verilator (default: false)
+#   BAMBU_LIBM            bambu math library, -l<m|m_s|m_newlib|m_musl> (default: m)
+#   BAMBU_MAX_SIM_CYCLES  bambu --max-sim-cycles, the length of the longest simulation (bambu's default is
+#                         200000000; a baseline CNN can need more)
 #   BAMBU_TOP             top function (default: forward_kernel)
+#   BAMBU_SETUP           bambu --experimental-setup (default: BAMBU-BALANCED-MP, then BAMBU-BALANCED if
+#                         that fails in the mux connection binding)
 
 set -e -o pipefail
 
@@ -45,6 +50,7 @@ BAMBU_MEMPOLICY="${BAMBU_MEMPOLICY:-NO_BRAM}"
 BAMBU_CLOCK_PERIOD="${BAMBU_CLOCK_PERIOD:-5}"
 BAMBU_COMPILER="${BAMBU_COMPILER:-I386_CLANG19}"
 BAMBU_RUN_SIMULATION="${BAMBU_RUN_SIMULATION:-false}"
+BAMBU_LIBM="${BAMBU_LIBM:-m}"
 BAMBU_TOP="${BAMBU_TOP:-forward_kernel}"
 if [ -z "${BAMBU_M+x}" ]; then
   if [ "$(uname)" = "Darwin" ]; then BAMBU_M="-m64"; else BAMBU_M=""; fi
@@ -96,19 +102,34 @@ if [ "$BAMBU_RUN_SIMULATION" = "true" ]; then
   SIMULATION_ARGS="--simulate --simulator=VERILATOR --testbench-style=verilog --generate-tb=$TESTBENCH"
 fi
 
-# dev/panda dropped -lm, --soft-float, --verilator-parallel and -v3.
-"$BAMBU_DEVPANDA" $BAMBU_M --print-dot \
+# dev/panda dropped --soft-float, --verilator-parallel and -v3. -lm picks the math library: LLVM IR
+# that calls sqrtf and friends (batch norm) needs it, or bambu finds no functional unit for them.
+run_bambu() {
+  "$BAMBU_DEVPANDA" $BAMBU_M -l${BAMBU_LIBM} --print-dot \
 	--compiler=$BAMBU_COMPILER \
 	--device=$BAMBU_DEVICE \
 	--clock-period=$BAMBU_CLOCK_PERIOD \
-	--experimental-setup=BAMBU-BALANCED-MP \
+	--experimental-setup=$1 \
 	--channels-number=2 \
 	--memory-allocation-policy=$BAMBU_MEMPOLICY \
 	--disable-function-proxy \
 	--generate-interface=INFER \
 	$SIMULATION_ARGS \
+	${BAMBU_MAX_SIM_CYCLES:+--max-sim-cycles=$BAMBU_MAX_SIM_CYCLES} \
 	--top-fname=$BAMBU_TOP \
 	input.$INPUT_EXT 2>&1 | tee bambu-log
+}
+
+# The -MP (multi-port memory) setups hit an internal error of the mux connection binding on some
+# large designs ("not expected from S_<n> to S_<m>"); the same design goes through without -MP.
+if ! run_bambu "${BAMBU_SETUP:-BAMBU-BALANCED-MP}"; then
+  if grep -q "not expected from" bambu-log && [ -z "${BAMBU_SETUP:-}" ]; then
+    echo "WARNING: bambu failed in the mux connection binding with BAMBU-BALANCED-MP; retrying with BAMBU-BALANCED" >&2
+    run_bambu BAMBU-BALANCED
+  else
+    exit 1
+  fi
+fi
 
 cp $BAMBU_TOP.v 06_verilog.v
 

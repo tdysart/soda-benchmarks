@@ -71,3 +71,12 @@ BAMBU_MEMPOLICY=ALL_BRAM
 # BAMBU_MEMPOLICY=NO_BRAM
 BAMBU_CLOCK_PERIOD=10
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
+
+# DPI-free testbench of bambu dev/panda, replayed under Verilator and SST. soda-opt's testbench
+# has no reference model of its own, so the IR compiled natively is the reference. Local tools
+# only; see scripts/mkinc/llvm_to_verilog_devpanda_tb.mk. Run it with
+#   make output/bambu-devpanda-tb/baseline/07_results.txt BAMBU_DEVICE=nangate45 BAMBU_MEMPOLICY=NO_BRAM
+# soda-opt writes the testbench while lowering the baseline, so the lowering is its recipe.
+SIMULATION_FILE_PATH=$(ODIR)/forward_kernel_testbench.c
+$(SIMULATION_FILE_PATH): $(ODIR)/04_llvm_baseline.mlir
+include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_devpanda_tb.mk
