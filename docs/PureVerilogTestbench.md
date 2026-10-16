@@ -119,11 +119,11 @@ make output/bambu-devpanda-tb/transformed/08_sst_results.txt \
 This needs soda-opt and LLVM 19.1's `mlir-opt`, `mlir-translate` and `opt` on
 `PATH`, plus torch-mlir's Python package on `PYTHONPATH`.
 [setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh) builds a
-torch-mlir that matches LLVM 19.1. Expect `verilator-sst: PASS in 10184 cycles`
+torch-mlir that matches LLVM 19.1. Expect `verilator-sst: PASS in 10237 cycles`
 (asap7-BC, 5 ns).
 
 The IR has no C source to run natively, so the example's own
-`forward_kernel_testbench.c` defines `forward_kernel` as the reference model
+`reference_testbench.c` defines `forward_kernel` as the reference model
 the hardware is checked against.
 
 ## 5. Dataflow designs from soda-plugins

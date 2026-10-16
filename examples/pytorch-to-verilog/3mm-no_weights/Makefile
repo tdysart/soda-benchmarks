@@ -51,5 +51,5 @@ include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
 
 # The testbench of the dev/panda flow: a C driver that also defines forward_kernel, the reference
 # model of the generated hardware (soda-opt's own testbench has none, so it is not used here).
-SIMULATION_FILE_PATH=forward_kernel_testbench.c
+SIMULATION_FILE_PATH=reference_testbench.c
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_devpanda_tb.mk

@@ -163,7 +163,7 @@ make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
 | `07_results.txt` | also simulates with Verilator (`<1\|0><TAB><cycles>`) |
 | `08_sst_results.txt` | runs the testbench under SST via verilator-sst (`<1\|0> <cycles>`) |
 
-The C example passes in 26322 cycles natively and under SST, the PyTorch one (asap7-BC) in 10184. The scripts behind the targets:
+The C example passes in 26322 cycles natively and under SST, the PyTorch one (asap7-BC) in 10237. The scripts behind the targets:
 [c_to_verilog_devpanda_tb.sh](../scripts/c_to_verilog_devpanda_tb.sh) (bambu; set `BAMBU_M`,
 `BAMBU_COMPILER` or `CLANG_BIN` if your setup differs) and
 [verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh), which also works on
@@ -217,8 +217,21 @@ plugin's 32-bit target. The `machine-bits` option was checked by hand.
   (the scripts do, via `CLANG_BIN`).
 * **`readlink: illegal option -- e` or an awk syntax error in `xmlq`.** The GNU shims from
   section 2 are missing.
-* **`unrecognized option '--soft-float'` (or `-lm`, `-v3`).** Dropped from `dev/panda`; remove
-  them.
+* **`unrecognized option '--soft-float'` (or `-v3`).** Dropped from `dev/panda`; remove them.
+  `-lm` is still there (`-l<m|m_s|m_newlib|m_musl>`) and needed: without it LLVM IR that calls
+  `sqrtf` fails with "no functional unit".
+* **The simulation never finishes ("Simulation exceeds 200000000 cycles").** Check the heap first.
+  soda-opt's IR `malloc`s every intermediate tensor, and bambu's `malloc` (etc/libbambu/memmgr.c,
+  synthesized into the design) has a fixed 384 KiB pool that returns NULL silently when it is
+  exhausted. `scripts/tosa_to_linalg.sh` therefore inserts deallocations
+  (`--buffer-deallocation-pipeline`, which puts them at the end of the function) and then
+  `scripts/early_dealloc.py` moves each one to right after the last use of its buffer. The peak
+  is then that of the live buffers (keyword_spotting 76 KB, visual_wake_words 221 KB); a model
+  whose live buffers still exceed 384 KiB (squeezenet: 25 MB) will not run.
+* **`no functional unit ... roundevenf`.** No bambu libm has it. `scripts/link_memref_copy.sh`
+  links `scripts/lib/roundeven.c` into the IR when it uses `llvm.roundeven`.
+* **`error -> not expected from S_<n> to S_<m>`.** An internal error of the `-MP` setups on large
+  designs; `c_to_verilog_devpanda_tb.sh` retries with `BAMBU-BALANCED`.
 * **`uses inferred scalar pointer interface 'ovalid' but the pointer is written before it is
   read`.** The interface pragmas are in the old syntax; use `#pragma HLS interface port=...`.
 * **The soda-plugins pass fails compiling the specialization unit (`ldiv_t`, `mbstate_t` not
@@ -245,4 +258,4 @@ The branch is rebased, not merged, so its history is rewritten on each sync: pus
 `git push --force-with-lease`, and keep a local backup branch of the old tip first. After a
 rebase, rebuild, re-run the regression, and run both examples through SST (`3mm` and the PyTorch
 `3mm-no_weights`); the last sync (onto `47ca8ff4b`) left the cycle counts unchanged at 26322 and
-10184.
+10237.

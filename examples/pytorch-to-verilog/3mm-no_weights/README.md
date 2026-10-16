@@ -61,7 +61,7 @@ make output/bambu-devpanda-tb/transformed/07_results.txt \
   BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu
 ```
 
-[forward_kernel_testbench.c](forward_kernel_testbench.c) is the C testbench.
+[reference_testbench.c](reference_testbench.c) is the C testbench. It is not called forward_kernel_testbench.c: soda-opt writes a file of that name into the working directory while lowering, which would overwrite it.
 bambu runs it natively to record the memory images and the reference results,
 and the Verilog testbench replays them. The IR has no C source to run, so this
 file also defines `forward_kernel` (three chained matrix products, in single
@@ -73,7 +73,7 @@ generated `output/forward_kernel_testbench.c` has no reference model, so it is
 not used.
 
 The target device is the Makefile's `BAMBU_DEVICE` (asap7-BC at 5 ns). Expect
-10184 cycles.
+10237 cycles.
 
 
 ## Running the testbench under SST

@@ -34,12 +34,16 @@ mlir-opt \
   -eliminate-empty-tensors \
   -one-shot-bufferize="function-boundary-type-conversion=identity-layout-map bufferize-function-boundaries allow-return-allocs-from-loops unknown-type-conversion=identity-layout-map" \
   -func-bufferize \
-  -buffer-deallocation-simplification \
-  -bufferization-lower-deallocations \
+  --buffer-deallocation-pipeline \
   --buffer-results-to-out-params \
   --canonicalize -cse \
   $OUTPUT_DIR/02_linalg_on_tensors.mlir \
   -o $OUTPUT_PATH
+
+# The deallocation pipeline frees every buffer at the end of the function. Move each free to right
+# after the last use of its buffer, so the peak memory is that of the live buffers: the hardware
+# heap (bambu's malloc) has a fixed pool, and running out of it makes the design misbehave.
+python3 $SCRIPT_DIR/early_dealloc.py $OUTPUT_PATH $OUTPUT_PATH
 
 ### Original passes ### 
 
