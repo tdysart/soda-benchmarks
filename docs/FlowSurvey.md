@@ -3,9 +3,11 @@
 A survey from October 2026 of how far each example, model and benchmark in this repository gets
 through the `bambu-devpanda-tb` flow: soda-opt lowering, Verilog from bambu dev/panda, the
 DPI-free Verilog testbench simulated with Verilator, and the same testbench run under SST with
-verilator-sst. The flow itself is described in [BambuDevPanda.md](BambuDevPanda.md) and
-[PureVerilogTestbench.md](PureVerilogTestbench.md). Everything here ran on macOS arm64 with the
-tools built as described in [ModelConversionTools.md](ModelConversionTools.md).
+verilator-sst. How to run the flow is in [PureVerilogTestbench.md](PureVerilogTestbench.md); bambu itself, and
+how its testbench works, are in `MACOS_PORT.md` of the
+[bambu branch](https://github.com/tdysart/PandA-bambu/blob/spike/devpanda-macos-testbench/MACOS_PORT.md).
+Everything here ran on macOS arm64 with the tools built as described in
+[ModelConversionTools.md](ModelConversionTools.md).
 
 "Pass" means the hardware's results matched the reference model bit for bit
 (`07_results.txt` starts with `1`), with the cycle count shown. The reference model is the C
@@ -112,6 +114,9 @@ moves each `memref.dealloc` to right after the last use of its buffer or of any 
 
 ## Reproducing
 
+The make targets, variables and prerequisites are in
+[PureVerilogTestbench.md](PureVerilogTestbench.md). The environment used for this survey:
+
 ```bash
 source tjd_addpath.sh                      # tools; adds the dev/panda bambu to PATH
 export PATH=$HOME/SSTstable/sst16.0/elements-install/bin:$HOME/SSTstable/sst16.0/core-install/bin:$PATH
@@ -119,32 +124,11 @@ export PYTHONPATH=$HOME/SODA-OPT/torch-mlir/build/tools/torch-mlir/python_packag
 source $HOME/SODA-OPT/torch-mlir/venv/bin/activate      # torch and torchvision
 ```
 
-The TensorFlow model additionally needs a Python with TensorFlow (here a separate venv with
-tensorflow 2.16.2 and `tf_keras`, run with `TF_USE_LEGACY_KERAS=1`) first on `PATH`.
-
-In each example or model directory:
-
-```bash
-make output/bambu-devpanda-tb/baseline/07_results.txt       # Verilog and Verilator
-make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
-     VERILATOR_SST_SRC=$HOME/SODA-OPT/verilator-sst          # also under SST
-```
-
-(`transformed` instead of `baseline` for `pytorch-to-verilog`.) The models and examples
-include `scripts/mkinc/model_devpanda_tb.mk`, which adds these targets. Variables that matter:
-`BAMBU_DEVICE` (default `nangate45`), `BAMBU_CLOCK_PERIOD`, `BAMBU_MEMPOLICY`,
-`BAMBU_MAX_SIM_CYCLES` (default 200M), `BAMBU_LIBM`, `BAMBU_SETUP`.
-
-The PolyBench kernels are scaffolded with `sb_cli`, which has no dev/panda target yet: after
-`python -m sb_cli init --benchmark_name <kernel> --dataset MINI --dtype float32 --flow baseline
---backend bambu --stage simulation`, append
-`include $(SCRIPTS_DIR)/mkinc/model_devpanda_tb.mk` to the generated Makefile and make the same
-target.
-
-Two things that cost time: never edit a shell script that a background `make` is running (bash
-reads scripts incrementally, which corrupted two long runs), and soda-opt writes
-`forward_kernel_testbench.c` into the working directory, so do not keep a file of that name
-there.
+The TensorFlow model used a separate venv with tensorflow 2.16.2 and `tf_keras`, first on `PATH`,
+with `TF_USE_LEGACY_KERAS=1`. In each directory:
+`make output/bambu-devpanda-tb/baseline/07_results.txt` (`transformed` for `pytorch-to-verilog`),
+and `08_sst_results.txt` with `VERILATOR_SST_SRC` for the SST runs. The PolyBench kernels were
+scaffolded as described under "Models and PolyBench kernels" there.
 
 ## Open items
 

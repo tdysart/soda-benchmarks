@@ -189,6 +189,6 @@ soda-opt (in a new build directory, since its CMake cache holds the old LLVM):
         -DLLVM_EXTERNAL_LIT=$BUILD_DIR/bin/llvm-lit
 
 bambu dev/panda: build it with this clang instead of Homebrew's llvm@19, i.e. put
-$INSTALL_DIR/bin on PATH where docs/BambuDevPanda.md uses /opt/homebrew/opt/llvm@19/bin, and
+$INSTALL_DIR/bin on PATH where MACOS_PORT.md (bambu branch) uses /opt/homebrew/opt/llvm@19/bin, and
 configure with -DPANDA_LIBBAMBU_COMPILER=I386_CLANG19.
 EOF

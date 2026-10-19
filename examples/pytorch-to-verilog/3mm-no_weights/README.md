@@ -47,7 +47,7 @@ under verilator-sst. The `bambu-devpanda-tb` targets produce it.
 
 `--testbench-style` is not in upstream bambu yet: it comes from branch
 `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which is upstream's
-`dev/panda` built on macOS ([guide](../../../docs/BambuDevPanda.md)). This path
+`dev/panda` built on macOS ([guide](../../../docs/PureVerilogTestbench.md)). This path
 uses local tools only, not the docker image:
 
 * bambu built from that branch, passed as `BAMBU_DEVPANDA`

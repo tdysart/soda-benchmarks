@@ -115,7 +115,7 @@ The specialization unit is compiled for a 32-bit target by default, to match Bam
 ### Running Bambu
 
 (For building this bambu on macOS and running its testbench, see
-[docs/BambuDevPanda.md](../../docs/BambuDevPanda.md).)
+[docs/PureVerilogTestbench.md](../../docs/PureVerilogTestbench.md#dataflow-designs-from-soda-plugins).)
 
 Pass `--generate-interface=INFER`:
 

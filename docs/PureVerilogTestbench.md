@@ -1,17 +1,19 @@
-# Pure-Verilog testbench for verilator-sst
+# Running examples through bambu dev/panda and SST
 
-bambu's default testbench is a DPI-C co-simulation: the Verilog talks to a
-separate C driver process. That can't run inside verilator-sst. bambu
-`dev/panda` can instead generate a self-contained, DPI-free Verilog testbench
-(`--testbench-style=verilog`). It is a single module whose only port is
-`clock`, with the stimulus, memory model and result checks all inside it. The
-`bambu-devpanda-tb` make targets of the examples run it end to end: HLS,
-testbench, bambu's own Verilator run, and a run under SST through
-verilator-sst.
+bambu's default testbench is a DPI-C co-simulation: the Verilog talks to a separate C driver
+process. That can't run inside verilator-sst. bambu `dev/panda` can instead generate a
+self-contained, DPI-free Verilog testbench (`--testbench-style=verilog`): a single module whose
+only port is `clock`, with the stimulus, memory model and result checks all inside it. The
+`bambu-devpanda-tb` make targets of the examples, models and PolyBench experiments run it end to
+end: soda-opt lowering, HLS, the testbench, bambu's own Verilator run, and a run under SST
+through verilator-sst.
 
-This page ties together the pieces needed to reproduce that from scratch on
-macOS/arm64. The details live in the linked READMEs, and
-[BambuDevPanda.md](BambuDevPanda.md) is the full guide to the bambu side.
+This page is the guide to using that flow from this repository on macOS/arm64. Building bambu,
+running it by hand, and how the testbench works are in `MACOS_PORT.md` of the bambu branch
+([link](https://github.com/tdysart/PandA-bambu/blob/spike/devpanda-macos-testbench/MACOS_PORT.md)).
+Which examples and models pass, with cycle counts and what had to be fixed, is in
+[FlowSurvey.md](FlowSurvey.md). The LLVM versions each tool needs are in
+[ModelConversionTools.md](ModelConversionTools.md#toolchain-versions).
 
 ## Repositories
 
@@ -21,70 +23,39 @@ macOS/arm64. The details live in the linked READMEs, and
 | [tdysart/soda-benchmarks](https://github.com/tdysart/soda-benchmarks) | `tjd-verilator-sst` | this repo: scripts, make targets, examples |
 | [tactcomplabs/verilator-sst](https://github.com/tactcomplabs/verilator-sst) | `feature/mdpi-testbench-support` | builds the testbench into an SST component |
 
-`--testbench-style=verilog` is not in upstream bambu, and the verilator-sst
-branch carries the custom-module and link-handling support the SST run needs.
+`--testbench-style=verilog` is not in upstream bambu, and the verilator-sst branch carries the
+custom-module and link-handling support the SST run needs.
 
 ## Prerequisites
 
 Verified on macOS 26 (arm64) with Homebrew:
 
-* the packages listed in [BambuDevPanda.md](BambuDevPanda.md#prerequisites)
-  (`llvm@19`, `cmake`, `ninja`, `boost`, `verilator`, `coreutils`, `gawk` and
-  so on)
-* SST-Core 16.0, built from upstream. It is not covered here; `sst` and
-  `sst-config` must be in the same directory.
-* Python 3
-* For the MLIR/PyTorch example only: LLVM 19.1 tools, soda-opt and torch-mlir
-  (see [step 4](#4-the-pytorch-example)). The C example needs none of these.
+* bambu built from the branch above, following `MACOS_PORT.md` (Homebrew `llvm@19`, `cmake`,
+  `ninja`, `boost`, `verilator`, `coreutils`, `gawk` and so on). Its `bin/bambu` is passed to the
+  make targets as `BAMBU_DEVPANDA`.
+* SST-Core 16.0, built from upstream. It is not covered here; `sst` and `sst-config` must be in
+  the same directory.
+* Python 3.
+* For anything that starts from MLIR, PyTorch, TensorFlow or TFLite (not the C example): soda-opt,
+  LLVM 19.1's `mlir-opt`, `mlir-translate` and `opt`, and the model conversion tools, all on
+  `PATH`. See [ModelConversionTools.md](ModelConversionTools.md); torch-mlir's Python package goes
+  on `PYTHONPATH` and its venv (with torch) is activated. The TensorFlow example needs a Python
+  with TensorFlow first on `PATH`.
 
-## Toolchain versions
-
-Only the MLIR/PyTorch path needs the LLVM 19.1.5 install below. The C examples and the testbench
-flow itself need only bambu and `llvm@19`.
-
-| Tool | LLVM it uses | Needed for |
-|---|---|---|
-| soda-opt | built against LLVM 19.1.5 (static, no RTTI) | MLIR examples (`soda_to_llvm.mk`), sb-cli experiments, `kernel_arg_order.sh` |
-| `mlir-opt`, `mlir-translate`, `opt` | the same LLVM 19.1.5 install, on `PATH` | MLIR examples (`tosa_to_linalg.sh`, `linalg_to_llvm.sh`, `llvm_to_ll.sh`, `mlir_to_graph.sh`) |
-| torch-mlir | its own submodule, LLVM `d16b21b` (19 development), commit `43506726853b` | PyTorch examples; chosen so its TOSA output parses with LLVM 19.1's `mlir-opt` ([setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh)) |
-| TensorFlow MLIR tools (`tf-opt`, `tf-mlir-translate`, `flatbuffer_translate`) | their own LLVM, `acc159aea1e6` (2024-07-23, the `release/19.x` branch point), TF commit `d7f515cc2fd8` | TFLite and TensorFlow examples (`tflite_to_tosa.sh`, `graphdef_to_tosa.sh`); chosen so the TOSA output parses with LLVM 19.1's `mlir-opt` ([setup-tensorflow-mlir.sh](../scripts/external/setup-tensorflow-mlir.sh), [guide](ModelConversionTools.md)) |
-| bambu `dev/panda` | Homebrew `llvm@19` (`--compiler=I386_CLANG19`) | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, which clang 16 cannot |
-| Verilator, SST, verilator-sst | none | the SST runs |
-
-soda-opt is what sets LLVM 19.1.5. Its README says it was tested with
-llvm-project commit `ab4b5a2db582958af1ee308a790cfdb42bd24720`, which is the
-`llvmorg-19.1.5` tag, and its dev container and CI build `llvmorg-19.1.5`
-(`LLVM_BRANCH`). Nothing in its build checks the version, but it uses LLVM's
-C++ APIs, which change between releases, so build it against exactly that
-LLVM. The other LLVM 19 tools above come from the same install.
-
-On macOS, soda-opt's `build_tools/build_llvm.sh` needs one change: it configures LLVM
-with `-DLLVM_ENABLE_LLD=ON`, and lld is not installed with Homebrew's default
-toolchain. [soda-opt-build-llvm-without-lld.patch](../scripts/external/soda-opt-build-llvm-without-lld.patch)
-turns it off (`git apply` it in the soda-opt checkout before building). It is kept here
-because soda-opt is a separate repository (`pnnl/soda-opt`).
-
-## 1. Build bambu
-
-Follow [BambuDevPanda.md](BambuDevPanda.md#1-build). It produces an install
-tree whose `bin/bambu` is passed to the make targets as `BAMBU_DEVPANDA`.
-Check the build with:
+Check the bambu build with:
 
 ```sh
 /path/to/install/bin/bambu --help | grep -A2 testbench-style
 ```
 
-## 2. Get soda-benchmarks and verilator-sst
+and get the other two repositories:
 
 ```sh
 git clone -b tjd-verilator-sst git@github.com:tdysart/soda-benchmarks.git
 git clone -b feature/mdpi-testbench-support git@github.com:tactcomplabs/verilator-sst.git
 ```
 
-The examples below pass the verilator-sst checkout as `VERILATOR_SST_SRC`. Any
-location works.
-
-## 3. A C example
+## A C example
 
 The quickest check needs no MLIR tools. From `examples/c-to-verilog/3mm`:
 
@@ -95,19 +66,74 @@ make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
   SST=/path/to/sst-install/bin/sst
 ```
 
-This synthesizes `forward_kernel.c` for nangate45 at 5 ns and runs the
-example's C testbench natively to record the memory images and the reference
-results. The Verilog testbench replays them, first under bambu's own Verilator
-run and then, built into a verilator-sst component, under SST. Expect
-`verilator-sst: PASS in 26322 cycles`. `07_results.txt` stops after bambu's
-Verilator simulation, with the same count. See the example's
+This synthesizes `forward_kernel.c` for nangate45 at 5 ns and runs the example's C testbench
+natively to record the memory images and the reference results. The Verilog testbench replays
+them, first under bambu's own Verilator run and then, built into a verilator-sst component, under
+SST. Expect `verilator-sst: PASS in 26322 cycles`. See the example's
 [README](../examples/c-to-verilog/3mm/README.md).
 
-## 4. The PyTorch example
+## Make targets and variables
+
+Every example or model Makefile that includes the flow has the same three targets, for a
+strategy `<s>` (`baseline`; also `optimized` or `transformed` where the Makefile provides them):
+
+| Target | What it produces |
+|--------|------------------|
+| `output/bambu-devpanda-tb/<s>/06_verilog.v` | the Verilog |
+| `output/bambu-devpanda-tb/<s>/07_results.txt` | also simulates with Verilator (`<1\|0><TAB><cycles>`) |
+| `output/bambu-devpanda-tb/<s>/08_sst_results.txt` | runs the testbench under SST via verilator-sst (`<1\|0> <cycles>`) |
+
+The models and the PyTorch/TFLite/TensorFlow examples get them from
+[scripts/mkinc/model_devpanda_tb.mk](../scripts/mkinc/model_devpanda_tb.mk); the C example uses
+[c_to_verilog_devpanda_tb.mk](../scripts/mkinc/c_to_verilog_devpanda_tb.mk). Variables, on the
+make command line or in the environment:
+
+| Variable | Meaning (default) |
+|----------|-------------------|
+| `BAMBU_DEVPANDA` | the dev/panda `bambu` (the one on `PATH`) |
+| `VERILATOR_SST_SRC`, `SST`, `SST_CYCLES` | verilator-sst checkout, `sst` binary, SST clock cycles (bambu's count plus 10%) |
+| `BAMBU_DEVICE`, `BAMBU_CLOCK_PERIOD`, `BAMBU_MEMPOLICY` | `nangate45`, 5 ns, `NO_BRAM` |
+| `BAMBU_MAX_SIM_CYCLES` | longest simulation (bambu's default, 200M cycles) |
+| `BAMBU_LIBM` | bambu math library, `-l<m\|m_s\|m_newlib\|m_musl>` (`m`) |
+| `BAMBU_SETUP` | bambu `--experimental-setup` (`BAMBU-BALANCED-MP`, then `BAMBU-BALANCED` if that fails) |
+| `BAMBU_M`, `BAMBU_COMPILER`, `CLANG_BIN` | `-m64` on macOS, `I386_CLANG19`, Homebrew `llvm@19`'s directory |
+
+The scripts behind the targets are
+[c_to_verilog_devpanda_tb.sh](../scripts/c_to_verilog_devpanda_tb.sh) (bambu; it takes C or LLVM
+IR) and [verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh), which also works
+on any bambu output directory made with `--testbench-style=verilog`:
+
+```sh
+VERILATOR_SST_SRC=/path/to/verilator-sst SST=/path/to/sst \
+  scripts/verilator_sst_devpanda_tb.sh <bambu_dir> results.txt
+```
+
+verilator-sst's custom-module build takes one top source, so that script concatenates the shim
+package, `panda_libtech.v`, the design and the testbench into one file. It expects
+`verilator-sst: PASS in <N> cycles`, the same count bambu reports natively, and exits non-zero
+when the testbench reports a mismatch.
+
+## How the reference is chosen
+
+The testbench C file calls the top function, and bambu runs a reference model natively to record
+the expected results. For C input that is the kernel itself. For LLVM IR input there is no C to
+run, so:
+
+* If the testbench file defines the top function (as
+  [pytorch-to-verilog](../examples/pytorch-to-verilog/3mm-no_weights/README.md)'s
+  `reference_testbench.c` does), that definition is the reference.
+* Otherwise the soda-opt IR, compiled natively with the top function renamed, is the reference.
+  This checks that the hardware computes what the IR says, not that the IR matches the PyTorch
+  or TensorFlow model. The models and PolyBench kernels use this, with soda-opt's generated
+  `output/forward_kernel_testbench.c` as the driver.
+
+soda-opt writes a file called `forward_kernel_testbench.c` into the working directory, so do not
+keep a handwritten file of that name there.
+
+## The PyTorch example
 
 [examples/pytorch-to-verilog/3mm-no_weights](../examples/pytorch-to-verilog/3mm-no_weights/README.md)
-runs a PyTorch model through torch-mlir and soda-opt to LLVM IR, then through
-the same flow:
+runs a PyTorch model through torch-mlir and soda-opt to LLVM IR, then through the same flow:
 
 ```sh
 make output/bambu-devpanda-tb/transformed/08_sst_results.txt \
@@ -116,53 +142,58 @@ make output/bambu-devpanda-tb/transformed/08_sst_results.txt \
   SST=/path/to/sst-install/bin/sst
 ```
 
-This needs soda-opt and LLVM 19.1's `mlir-opt`, `mlir-translate` and `opt` on
-`PATH`, plus torch-mlir's Python package on `PYTHONPATH`.
-[setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh) builds a
-torch-mlir that matches LLVM 19.1. Expect `verilator-sst: PASS in 10237 cycles`
-(asap7-BC, 5 ns).
+Expect `verilator-sst: PASS in 10237 cycles` (asap7-BC, 5 ns).
 
-The IR has no C source to run natively, so the example's own
-`reference_testbench.c` defines `forward_kernel` as the reference model
-the hardware is checked against.
+## Models and PolyBench kernels
 
-## 5. Dataflow designs from soda-plugins
+`models/` and the PyTorch/TFLite/TensorFlow examples use the same targets with the `baseline`
+strategy, for example `make output/bambu-devpanda-tb/baseline/07_results.txt` in
+`models/tflite/anomaly_detection`. PolyBench kernels are scaffolded with `sb_cli`, which has no
+dev/panda target yet: after `python -m sb_cli init --benchmark_name <kernel> --dataset MINI
+--dtype float32 --flow baseline --backend bambu --stage simulation`, append
+`include $(SCRIPTS_DIR)/mkinc/model_devpanda_tb.mk` to the generated Makefile and make the same
+target. [FlowSurvey.md](FlowSurvey.md) lists what passes and what does not.
 
-`dev/panda` is also the only bambu that accepts the soda-plugins dataflow
-designs (FIFOs between nodes); the guide is
-[BambuDevPanda.md](BambuDevPanda.md#5-dataflow-designs-from-soda-plugins).
+## Dataflow designs from soda-plugins
 
-Given a bambu output directory made with
-`--simulate --simulator=VERILATOR --testbench-style=verilog`,
-[verilator_sst_devpanda_tb.sh](../scripts/verilator_sst_devpanda_tb.sh) builds that testbench into
-a verilator-sst component and runs it under SST:
+The soda-plugins backend ([examples/soda-plugins](../examples/soda-plugins/README.md)) lowers a
+dataflow MLIR module to LLVM IR plus an `architecture.xml`, and `dev/panda` is the only bambu
+that accepts it. Using it:
 
-```bash
-VERILATOR_SST_SRC=/path/to/verilator-sst SST=/path/to/sst \
-  scripts/verilator_sst_devpanda_tb.sh <bambu_dir> results.txt
-```
+1. Run the pipeline with `machine-bits=64` (the default, `-m32`, has no sysroot on arm64 macOS):
+   `sodap-dataflow-to-llvm-pipeline{top-func=forward ... machine-bits=64}`, with `clangxx` and
+   `include-panda-path` pointing at the `llvm@19` clang++ and `<install>/include/panda`.
+2. Write a C testbench whose `main` calls the top function and whose definition of the top
+   function is the reference model (the IR cannot run natively: its `ac_channel` operations only
+   exist in hardware).
+3. Run bambu on the IR with `--architecture-xml=architecture.xml --generate-interface=INFER
+   --generate-tb=<testbench.c> --testbench-style=verilog -m64 --compiler=I386_CLANG19`.
 
-It expects `verilator-sst: PASS in <N> cycles`, the same count bambu reports natively, and exits
-non-zero when the testbench reports a mismatch. The soda-plugins `forward` design (`gemm_small`)
-passes in 1849 cycles both natively and under SST. For that flow generate the IR with
-`machine-bits=64` on `sodap-dataflow-to-llvm-pipeline` and pass `--generate-interface=INFER` to
-bambu; see [examples/soda-plugins](../examples/soda-plugins/README.md).
+Then run `verilator_sst_devpanda_tb.sh` on the output directory. The `forward` design
+(`gemm_small`) passes in 1849 cycles both natively and under SST.
 
 ## Troubleshooting
 
+Problems with bambu itself (building it, the GNU shims, pragma syntax, `m_param_alloc`, the
+unsupported-interface error) are in the troubleshooting section of `MACOS_PORT.md`. Flow-side:
+
 * **The SST run reports no result.** The testbench relies on Verilator's
-  `--timescale-override 1ps/1ps`, which the SST scripts pass, and needs the
-  verilator-sst branch above. See also the troubleshooting list in
-  [BambuDevPanda.md](BambuDevPanda.md#troubleshooting).
-* **`syntax error ... Error in parsing xml ... asap7-BC.spec_data`.** The device
-  files were merged by an older `etc/scripts/append_libraries.sh` that dropped
-  a closing tag on macOS. Rebuild from the current `spike/devpanda-macos-testbench`,
-  whose commit "append_libraries.sh: fix the merged device files on macOS" has the fix.
-* **`stdio.h` not found while bambu compiles.** Export
-  `SDKROOT=$(xcrun --show-sdk-path)`. The scripts do this, but a hand-run
-  bambu needs it too.
-
-## More
-
-* The bambu branch's own notes: `MACOS_PORT.md` in `spike/devpanda-macos-testbench`.
-* The scripts: [scripts/README.md](../scripts/README.md).
+  `--timescale-override 1ps/1ps`, which the SST scripts pass, and needs the verilator-sst branch
+  above. Raise `SST_CYCLES`, and check `<bambu_dir>/verilator-sst/sst-run.log`.
+* **The simulation never finishes ("Simulation exceeds 200000000 cycles").** Check the heap
+  first. soda-opt's IR `malloc`s every intermediate tensor, and bambu's `malloc` is synthesized
+  into the design with a fixed 384 KiB pool that returns NULL silently when exhausted.
+  `scripts/tosa_to_linalg.sh` therefore inserts deallocations
+  (`--buffer-deallocation-pipeline`, which puts them at the end of the function) and then
+  `scripts/early_dealloc.py` moves each one to right after the last use of its buffer. The peak
+  is then that of the live buffers; a model whose live buffers still exceed 384 KiB (squeezenet:
+  25 MB) will not run. See [FlowSurvey.md](FlowSurvey.md#the-heap).
+* **`no functional unit ... roundevenf`.** No bambu libm has it. `scripts/link_memref_copy.sh`
+  links `scripts/lib/roundeven.c` into the IR when it uses `llvm.roundeven`.
+* **`no functional unit ... sqrtf`.** bambu needs `-lm`; the scripts pass it (`BAMBU_LIBM`).
+* **`error -> not expected from S_<n> to S_<m>`.** An internal error of bambu's `-MP` setups on
+  large designs; `c_to_verilog_devpanda_tb.sh` retries with `BAMBU-BALANCED`.
+* **`sed: ... undefined label`, or another BSD/GNU difference.** The scripts use
+  portable `sed -i.bak`; if you add one, do the same.
+* **Never edit a shell script that a background `make` is running.** bash reads scripts
+  incrementally, which corrupts the run. Replace the file instead (write a copy, then `mv`).

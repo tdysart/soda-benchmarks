@@ -17,7 +17,7 @@ around macOS problems with build flags only.
 
 Both projects build their own copy of LLVM, and the TOSA they print has to parse with the
 LLVM 19.1.5 `mlir-opt` that soda-opt is built against (see
-[Toolchain versions](PureVerilogTestbench.md#toolchain-versions)). TOSA's textual form changes
+[Toolchain versions](#toolchain-versions)). TOSA's textual form changes
 between LLVM releases, so the closest LLVM wins:
 
 | Project | Commit | Its LLVM | Why |
@@ -28,6 +28,39 @@ between LLVM releases, so the closest LLVM wins:
 If soda-opt ever moves to a different LLVM, pick new commits the same way: find the LLVM
 commit you want, then the project commit that pins nearest to it (for TensorFlow, the
 history of `third_party/llvm/workspace.bzl`, which is where `LLVM_COMMIT` lives).
+
+## Toolchain versions
+
+Which LLVM each tool of the flow uses. Only the MLIR/PyTorch/TensorFlow path needs the LLVM 19.1.5
+install below; the C examples and the testbench flow itself need only bambu and Homebrew
+`llvm@19`.
+
+| Tool | LLVM it uses | Needed for |
+|---|---|---|
+| soda-opt | built against LLVM 19.1.5 (static, no RTTI) | MLIR examples (`soda_to_llvm.mk`), sb-cli experiments, `kernel_arg_order.sh` |
+| `mlir-opt`, `mlir-translate`, `opt` | the same LLVM 19.1.5 install, on `PATH` | MLIR examples (`tosa_to_linalg.sh`, `linalg_to_llvm.sh`, `llvm_to_ll.sh`, `mlir_to_graph.sh`) |
+| torch-mlir | its own submodule, LLVM `d16b21b` (19 development), commit `43506726853b` | PyTorch examples; [setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh) |
+| TensorFlow MLIR tools (`tf-opt`, `tf-mlir-translate`, `flatbuffer_translate`) | their own LLVM, `acc159aea1e6` (the `release/19.x` branch point), TF commit `d7f515cc2fd8` | TFLite and TensorFlow examples (`tflite_to_tosa.sh`, `graphdef_to_tosa.sh`); [setup-tensorflow-mlir.sh](../scripts/external/setup-tensorflow-mlir.sh) |
+| bambu `dev/panda` | Homebrew `llvm@19` (`--compiler=I386_CLANG19`) | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, which clang 16 is not guaranteed to |
+| Verilator, SST, verilator-sst | none | the SST runs |
+
+soda-opt is what sets LLVM 19.1.5. Its README says it was tested with llvm-project commit
+`ab4b5a2db582958af1ee308a790cfdb42bd24720`, which is the `llvmorg-19.1.5` tag, and its dev
+container and CI build `llvmorg-19.1.5` (`LLVM_BRANCH`). Nothing in its build checks the version,
+but it uses LLVM's C++ APIs, which change between releases, so build it against exactly that
+LLVM. The other LLVM 19 tools above come from the same install.
+
+On macOS, soda-opt's `build_tools/build_llvm.sh` needs one change: it configures LLVM with
+`-DLLVM_ENABLE_LLD=ON`, and lld is not installed with Homebrew's default toolchain.
+[soda-opt-build-llvm-without-lld.patch](../scripts/external/soda-opt-build-llvm-without-lld.patch)
+turns it off (`git apply` it in the soda-opt checkout before building). It is kept here because
+soda-opt is a separate repository (`pnnl/soda-opt`).
+
+Homebrew's `llvm@19` is not a substitute for that install: it is 19.1.7 and does not ship MLIR's
+test-pass libraries (`MLIRAffineTransformsTestPasses`, `MLIRLinalgTestPasses`,
+`MLIRTilingInterfaceTestPasses`), which soda-opt links, nor `llvm-lit`. The draft
+[setup-llvm.sh](../scripts/external/setup-llvm.sh) builds one LLVM 19.1.5 with clang, MLIR and RTTI
+that would serve both soda-opt and bambu; it has not been run yet.
 
 ## Prerequisites
 
