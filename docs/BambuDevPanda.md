@@ -49,10 +49,15 @@ Two choices are not interchangeable:
 * **Apple clang builds bambu, Homebrew `llvm@19` is the compiler bambu drives** (`--compiler=I386_CLANG19`).
   bambu loads clang plugins into that compiler, so the plugins must use the same C++ library
   (libc++); building with Homebrew GCC gives libstdc++ and an ABI mismatch.
-* **Not `~/SODA-OPT/llvm`.** That LLVM 19.1.5 build is MLIR-only (no clang, static, RTTI off) and
-  cannot host the plugins. Clang 16 cannot be used either: it cannot read the LLVM 19 IR that
-  soda-opt produces (opaque pointers), and the clang bambu uses has to be the same major version
-  as the LLVM that produced the IR.
+* **Not `~/SODA-OPT/llvm`.** That LLVM 19.1.5 build (the version soda-opt pins) is MLIR-only (no
+  clang, static) and has RTTI off. RTTI (run-time type information, the C++ support behind
+  `dynamic_cast` and `typeid`) is needed by bambu's clang plugins, whose classes derive from
+  LLVM's, so that build cannot host them.
+* **Clang 19, not 16.** Clang 16 is the newest clang the earlier autotools bambu supports
+  (`I386_CLANG16`, Homebrew `llvm@16`), which is where it came from. LLVM does not promise that
+  an older version reads newer IR, and soda-opt's LLVM 19 IR can use syntax clang 16 does not
+  know, so the clang bambu uses should be the same major version as the LLVM that produced the
+  IR.
 
 ## 1. Build
 
