@@ -1,7 +1,9 @@
-# Flow survey: examples and models through bambu dev/panda, Verilator and SST
+# Flow survey: examples and models through the bambu branch, Verilator and SST
 
 A survey from October 2026 of how far each example, model and benchmark in this repository gets
-through the `bambu-devpanda-tb` flow: soda-opt lowering, Verilog from bambu dev/panda, the
+through the `bambu-devpanda-tb` flow: soda-opt lowering, Verilog from the bambu branch
+(`spike/devpanda-macos-testbench` of tdysart/PandA-bambu: upstream `dev/panda` plus a macOS port and
+`--testbench-style=verilog`; see the naming note in [PureVerilogTestbench.md](PureVerilogTestbench.md)), the
 DPI-free Verilog testbench simulated with Verilator, and the same testbench run under SST with
 verilator-sst. How to run the flow is in [PureVerilogTestbench.md](PureVerilogTestbench.md); bambu itself, and
 how its testbench works, are in `MACOS_PORT.md` of the
@@ -118,7 +120,7 @@ The make targets, variables and prerequisites are in
 [PureVerilogTestbench.md](PureVerilogTestbench.md). The environment used for this survey:
 
 ```bash
-source tjd_addpath.sh                      # tools; adds the dev/panda bambu to PATH
+source tjd_addpath.sh                      # tools; adds the bambu branch's install to PATH
 export PATH=$HOME/SSTstable/sst16.0/elements-install/bin:$HOME/SSTstable/sst16.0/core-install/bin:$PATH
 export PYTHONPATH=$HOME/SODA-OPT/torch-mlir/build/tools/torch-mlir/python_packages/torch_mlir
 source $HOME/SODA-OPT/torch-mlir/venv/bin/activate      # torch and torchvision

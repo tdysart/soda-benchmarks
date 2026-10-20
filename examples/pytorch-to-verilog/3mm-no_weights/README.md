@@ -45,9 +45,9 @@ bambu's default testbench uses DPI-C. With `--testbench-style=verilog`, bambu
 instead generates a self-contained, DPI-free Verilog testbench that can run
 under verilator-sst. The `bambu-devpanda-tb` targets produce it.
 
-`--testbench-style` is not in upstream bambu yet: it comes from branch
-`spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which is upstream's
-`dev/panda` built on macOS ([guide](../../../docs/PureVerilogTestbench.md)). This path
+`--testbench-style` is not in upstream bambu, including upstream `dev/panda`: it comes from the
+bambu branch, `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which is upstream's
+`dev/panda` plus a macOS port ([guide](../../../docs/PureVerilogTestbench.md)). This path
 uses local tools only, not the docker image:
 
 * bambu built from that branch, passed as `BAMBU_DEVPANDA`

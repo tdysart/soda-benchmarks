@@ -31,12 +31,12 @@ Then run `make` again to execute the simulation which will verify the final veri
 bambu's default testbench uses DPI-C. The `bambu-devpanda-tb` targets instead generate a
 self-contained, DPI-free Verilog testbench (`--testbench-style=verilog`) that can run under
 verilator-sst.
-They use the bambu on upstream's `dev/panda` branch
-(branch `spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which builds on macOS and
-has its own `--testbench-style=verilog`). They run this directory's C testbench
+They use the bambu branch
+(`spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`: upstream `dev/panda` plus a macOS port
+and its own `--testbench-style=verilog`; see [the naming note](../../../docs/PureVerilogTestbench.md#naming-upstream-devpanda-and-the-bambu-branch)). They run this directory's C testbench
 (`forward_kernel_testbench.c`) natively to record the memory images and the reference results,
 and the Verilog testbench replays them. The kernel declares
-its `m_axi` interfaces in the form `dev/panda` reads, next to the older one.
+its `m_axi` interfaces in the form upstream `dev/panda` (and so the bambu branch) reads, next to the older one.
 
 ```sh
 make output/bambu-devpanda-tb/baseline/08_sst_results.txt \

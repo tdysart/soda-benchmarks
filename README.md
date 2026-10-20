@@ -88,7 +88,7 @@ ever silently overwritten. Deriving a name for `init` requires
 - Claude code generation of transformation schedules for PolyBench kernels: [Agentic Polybench Runner](docs/AgenticPolybenchRunner.md)
 - Triggering instrumentation and IP integration flows using the `sb-cli` command line interface: [Instrumentation](docs/Intrumentation.md)
 - Building a scaffolded experiment with SiliconCompiler instead of the generated Makefile: [A SiliconCompiler builder for `sb-cli`](docs/SiliconCompilerBackend.md)
-- Running C, PyTorch, TFLite and TensorFlow examples through bambu `dev/panda`'s DPI-free testbench and under SST via verilator-sst on macOS: [Running examples through bambu dev/panda and SST](docs/PureVerilogTestbench.md)
+- Running C, PyTorch, TFLite and TensorFlow examples through a DPI-free pure-Verilog testbench (from the bambu branch of tdysart/PandA-bambu, upstream `dev/panda` plus a macOS port) and under SST via verilator-sst on macOS: [Pure-Verilog testbench flow](docs/PureVerilogTestbench.md)
 - Which examples, models and PolyBench kernels run through that flow, what failed and why: [Flow survey](docs/FlowSurvey.md)
 
 

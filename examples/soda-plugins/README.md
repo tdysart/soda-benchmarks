@@ -77,13 +77,17 @@ and the FIFO bundles between them.
 
 ### Requirements
 
-- A Bambu from upstream's `dev/panda` branch. It is the first to accept the `array_dims`
+- A Bambu from upstream's `dev/panda` branch, or the bambu branch built on it
+  (`spike/devpanda-macos-testbench` of `tdysart/PandA-bambu`, which adds a macOS port and
+  `--testbench-style=verilog`; see
+  [the naming note](../../docs/PureVerilogTestbench.md#naming-upstream-devpanda-and-the-bambu-branch)). It is the first to accept the `array_dims`
   parameter attribute in `architecture.xml`, and its `ac_channel.h` has no nested `fifo`
   class (channel accesses are `_read_bambu_internal` / `_write_bambu_internal`), which is
   what `ConvertDataflowToLLVM` expects. Bambu 2024.10 and `upstream/main` reject the XML
   (`array_dims`) and then fail to synthesize the channel calls.
 - The LLVM that the plugin's IR comes from and the clang Bambu uses must be the same major
-  version (opaque pointers): clang 16 cannot read the plugin's LLVM 19 IR.
+  version: LLVM does not promise that an older version reads newer IR, and the plugin's LLVM 19
+  IR can use syntax that clang 16 does not know.
 - `SODAP_BAMBU_ROOT` set at configure time, so the Bambu tests are enabled. Without it
   they are reported as unsupported.
 

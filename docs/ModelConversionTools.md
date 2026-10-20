@@ -41,7 +41,7 @@ install below; the C examples and the testbench flow itself need only bambu and 
 | `mlir-opt`, `mlir-translate`, `opt` | the same LLVM 19.1.5 install, on `PATH` | MLIR examples (`tosa_to_linalg.sh`, `linalg_to_llvm.sh`, `llvm_to_ll.sh`, `mlir_to_graph.sh`) |
 | torch-mlir | its own submodule, LLVM `d16b21b` (19 development), commit `43506726853b` | PyTorch examples; [setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh) |
 | TensorFlow MLIR tools (`tf-opt`, `tf-mlir-translate`, `flatbuffer_translate`) | their own LLVM, `acc159aea1e6` (the `release/19.x` branch point), TF commit `d7f515cc2fd8` | TFLite and TensorFlow examples (`tflite_to_tosa.sh`, `graphdef_to_tosa.sh`); [setup-tensorflow-mlir.sh](../scripts/external/setup-tensorflow-mlir.sh) |
-| bambu `dev/panda` | Homebrew `llvm@19` (`--compiler=I386_CLANG19`) | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, which clang 16 is not guaranteed to |
+| bambu (the bambu branch: upstream `dev/panda` plus a macOS port, see [PureVerilogTestbench.md](PureVerilogTestbench.md#naming-upstream-devpanda-and-the-bambu-branch)) | Homebrew `llvm@19` (`--compiler=I386_CLANG19`) | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, so the clang it drives must be a 19 as well |
 | Verilator, SST, verilator-sst | none | the SST runs |
 
 soda-opt is what sets LLVM 19.1.5. Its README says it was tested with llvm-project commit

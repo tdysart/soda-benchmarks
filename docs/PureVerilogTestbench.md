@@ -8,9 +8,10 @@ There are two main goals being targeted through this branch and the documentatio
 As part of (1), we prefer a pure Verilog testbench that invokes the DUT (design under test). Having a pure Verilog testbench allows us to have a mostly stand-alone SST component that only needs a clocking method to verify its operation.
 
 bambu's default testbench cannot do that: it is a DPI-C co-simulation in which the Verilog talks to a
-separate C driver process. bambu `dev/panda` can instead generate a self-contained, DPI-free
-Verilog testbench (`--testbench-style=verilog`): a single module whose only port is `clock`, with
-the stimulus, memory model and result checks all inside it. It also serves goal (2), because
+separate C driver process. The bambu used here (the "bambu branch", defined below) can instead
+generate a self-contained, DPI-free Verilog testbench (`--testbench-style=verilog`): a single
+module whose only port is `clock`, with the stimulus, memory model and result checks all inside
+it. It also serves goal (2), because
 upstream's DPI path does not run on macOS (see `MACOS_PORT.md`, below).
 
 This page is the guide to using that flow from this repository on macOS/arm64. Building bambu,
@@ -19,6 +20,23 @@ running it by hand, and how the testbench works are in `MACOS_PORT.md` of the ba
 Which examples and models pass, with cycle counts and what had to be fixed, is in
 [FlowSurvey.md](FlowSurvey.md). The LLVM versions each tool needs are in
 [ModelConversionTools.md](ModelConversionTools.md#toolchain-versions).
+
+### Naming: upstream `dev/panda` and "the bambu branch"
+
+Two different things are called "dev/panda" in conversation, so this page keeps them apart:
+
+* **Upstream `dev/panda`** is the development branch of upstream bambu
+  ([ferrandi/PandA-bambu](https://github.com/ferrandi/PandA-bambu)). Upstream `main` is stale
+  (April 2025). Upstream `dev/panda` has no `--testbench-style` option. It needs
+  portability fixes to build on macOS, and its own `--simulate` path (DPI) does not run there.
+* **The bambu branch** is `spike/devpanda-macos-testbench` of the fork
+  [tdysart/PandA-bambu](https://github.com/tdysart/PandA-bambu): upstream `dev/panda` plus a macOS
+  arm64 port and the `--testbench-style=verilog` option (a few commits, rebased onto upstream
+  as it moves). **Everything on this page that says "bambu" means a bambu built from this
+  branch**, and `MACOS_PORT.md` at its root is its documentation.
+
+The `devpanda` in `BAMBU_DEVPANDA`, `bambu-devpanda-tb` and the `*_devpanda_tb` script names
+refers to that branch: `BAMBU_DEVPANDA` is the path of its installed `bin/bambu`.
 
 ## The flow
 
@@ -29,7 +47,7 @@ C, PyTorch, TFLite or TensorFlow source
 MLIR (TOSA, linalg) --soda-opt--> LLVM IR
         |
         v
-bambu dev/panda ----------------> Verilog design (06_verilog.v)
+bambu (the bambu branch) -------> Verilog design (06_verilog.v)
         |  runs the C testbench natively and records the memory images
         v
 pure-Verilog testbench (bambu_testbench.v, one `clock` port)
@@ -80,11 +98,12 @@ SST. Expect `verilator-sst: PASS in 26322 cycles`. See the example's
 
 | Repository | Branch | Role |
 |---|---|---|
-| [tdysart/PandA-bambu](https://github.com/tdysart/PandA-bambu) | `spike/devpanda-macos-testbench` | upstream bambu `dev/panda`, built on macOS, with `--testbench-style=verilog` |
+| [tdysart/PandA-bambu](https://github.com/tdysart/PandA-bambu) (a fork of [ferrandi/PandA-bambu](https://github.com/ferrandi/PandA-bambu)) | `spike/devpanda-macos-testbench`, "the bambu branch" | upstream `dev/panda` plus the macOS port and `--testbench-style=verilog` |
 | [tdysart/soda-benchmarks](https://github.com/tdysart/soda-benchmarks) | `tjd-verilator-sst` | this repo: scripts, make targets, examples |
 | [tactcomplabs/verilator-sst](https://github.com/tactcomplabs/verilator-sst) | `feature/mdpi-testbench-support` | builds the testbench into an SST component |
 
-`--testbench-style=verilog` is not in upstream bambu, and the verilator-sst branch carries the
+`--testbench-style=verilog` is not in upstream bambu (including upstream `dev/panda`); it is only
+in the bambu branch. The verilator-sst branch carries the
 custom-module and link-handling support the SST run needs.
 
 ## Prerequisites
@@ -134,7 +153,7 @@ make command line or in the environment:
 
 | Variable | Meaning (default) |
 |----------|-------------------|
-| `BAMBU_DEVPANDA` | the dev/panda `bambu` (the one on `PATH`) |
+| `BAMBU_DEVPANDA` | the `bambu` built from the bambu branch (the one on `PATH`) |
 | `VERILATOR_SST_SRC`, `SST`, `SST_CYCLES` | verilator-sst checkout, `sst` binary, SST clock cycles (bambu's count plus 10%) |
 | `BAMBU_DEVICE`, `BAMBU_CLOCK_PERIOD`, `BAMBU_MEMPOLICY` | `nangate45`, 5 ns, `NO_BRAM` |
 | `BAMBU_MAX_SIM_CYCLES` | longest simulation (bambu's default, 200M cycles) |
@@ -193,7 +212,7 @@ Expect `verilator-sst: PASS in 10237 cycles` (asap7-BC, 5 ns).
 `models/` and the PyTorch/TFLite/TensorFlow examples use the same targets with the `baseline`
 strategy, for example `make output/bambu-devpanda-tb/baseline/07_results.txt` in
 `models/tflite/anomaly_detection`. PolyBench kernels are scaffolded with `sb_cli`, which has no
-dev/panda target yet: after `python -m sb_cli init --benchmark_name <kernel> --dataset MINI
+`bambu-devpanda-tb` target yet: after `python -m sb_cli init --benchmark_name <kernel> --dataset MINI
 --dtype float32 --flow baseline --backend bambu --stage simulation`, append
 `include $(SCRIPTS_DIR)/mkinc/model_devpanda_tb.mk` to the generated Makefile and make the same
 target. [FlowSurvey.md](FlowSurvey.md) lists what passes and what does not.
@@ -201,8 +220,8 @@ target. [FlowSurvey.md](FlowSurvey.md) lists what passes and what does not.
 ## Dataflow designs from soda-plugins
 
 The soda-plugins backend ([examples/soda-plugins](../examples/soda-plugins/README.md)) lowers a
-dataflow MLIR module to LLVM IR plus an `architecture.xml`, and `dev/panda` is the only bambu
-that accepts it. Using it:
+dataflow MLIR module to LLVM IR plus an `architecture.xml`, and upstream `dev/panda`, so also the
+bambu branch, is the only bambu that accepts it. Using it:
 
 1. Run the pipeline with `machine-bits=64` (the default, `-m32`, has no sysroot on arm64 macOS):
    `sodap-dataflow-to-llvm-pipeline{top-func=forward ... machine-bits=64}`, with `clangxx` and
