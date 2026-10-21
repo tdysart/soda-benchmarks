@@ -36,8 +36,11 @@ if [ -z "${DOCKER_RUN}" ] && command -v opt &> /dev/null; then
   BREW_CLANG="/opt/homebrew/opt/llvm@${OPT_MAJOR}/bin/clang"
   if [ "${OPT_MAJOR}" != "${CLANG_MAJOR}" ] && [ -x "${BREW_CLANG}" ]; then
     CLANG="${BREW_CLANG}"
-    [ "$(uname)" = "Darwin" ] && CLANG_ENV="SDKROOT=${SDKROOT:-$(xcrun --show-sdk-path)}"
   fi
+fi
+# A clang that is not Apple's does not find the macOS SDK on its own.
+if [ "$(uname)" = "Darwin" ]; then
+  CLANG_ENV="SDKROOT=${SDKROOT:-$(xcrun --show-sdk-path)}"
 fi
 
 # Use a temp directory for intermediate files

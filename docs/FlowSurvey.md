@@ -146,6 +146,35 @@ scaffolded as described under "Models and PolyBench kernels" there.
 * `sb_cli` should generate the `bambu-devpanda-tb` targets itself.
 * Not covered: the IP-integration recipes (assert, change-location, hw-counters, vector-dot),
   the esp and cpu backends, and the soda-plugins dataflow lit tests.
-* One LLVM for every tool: Homebrew's `llvm@19` lacks the MLIR test libraries soda-opt links.
-  `scripts/external/setup-llvm.sh` is a draft that builds LLVM 19.1.5 with clang, MLIR and
-  RTTI; it has not been run.
+* Moving the flow to the one LLVM (below) as the default, and committing the bambu plugin fixes
+  it needs.
+
+## One LLVM for every tool
+
+Homebrew's `llvm@19` (19.1.7) lacks the MLIR test-pass libraries that soda-opt links, and
+`~/SODA-OPT/llvm` has no clang and no RTTI, so the flow used three LLVMs. `scripts/external/setup-llvm.sh`
+builds a single LLVM 19.1.5 with clang, MLIR, RTTI, MLIR's test libraries and optionally the Python
+bindings; it was built into `~/SODA-OPT/llvm-19.1.5-full` and checked as follows.
+
+| Check | Result |
+|---|---|
+| soda-opt configured and built against it (Release) | works; `ninja soda-opt` (the default target does not build it) |
+| soda-opt's lit tests (`check-soda`) | 40 of 41 without the Python bindings (`python/simple-parse.py` unsupported), 41 of 41 with `PYTHON_BINDINGS=ON`, like the existing build |
+| `soda_to_llvm_baseline.sh` with the new soda-opt, `mlir-opt` and `opt` | byte-identical MLIR to the existing toolchain for `keyword_spotting` and `pytorch-to-llvm` |
+| bambu branch built with the new clang (separate install) | builds; regression suite 24 of 24 checks |
+| Flow run with the new soda-opt, bambu and clang | same cycle counts as before: 3mm 26,322, PyTorch 3mm 10,237, `pytorch-to-llvm` 38,997, `anomaly_detection` 1,122,039, `keyword_spotting` 19,836,263 |
+
+Things the run turned up:
+
+* **The new LLVM has assertions on** (as soda-opt's `build_llvm.sh` does), and two of bambu's clang
+  plugins abort under it, although they work in an LLVM without assertions: `plugin_ASTAnalyzer.cpp`
+  called `RequireCompleteType(loc, T, /*DiagID=*/0)` (clang asserts the diagnostic ID is non-zero;
+  `isCompleteType` is the quiet call), and `TreeHeightReduction.hpp` called `isFast()` on any
+  floating-point instruction (it is only valid on floating-point math operators). Both are fixed in
+  the bambu branch; a bambu without the fixes needs `ENABLE_ASSERTIONS=OFF`.
+* **The shared-library layout works for the plugins**: they load into the new clang and resolve
+  LLVM's symbols from it.
+* **This clang does not find the macOS SDK on its own** (neither does Homebrew's), so scripts that
+  call it set `SDKROOT`; `link_memref_copy.sh` now does so whenever it is unset on macOS.
+* To use it: `CLANG_BIN=<install>/bin` for the make targets, and the new soda-opt, `mlir-opt` and
+  `opt` first on `PATH`.

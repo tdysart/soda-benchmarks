@@ -58,9 +58,14 @@ soda-opt is a separate repository (`pnnl/soda-opt`).
 
 Homebrew's `llvm@19` is not a substitute for that install: it is 19.1.7 and does not ship MLIR's
 test-pass libraries (`MLIRAffineTransformsTestPasses`, `MLIRLinalgTestPasses`,
-`MLIRTilingInterfaceTestPasses`), which soda-opt links, nor `llvm-lit`. The draft
-[setup-llvm.sh](../scripts/external/setup-llvm.sh) builds one LLVM 19.1.5 with clang, MLIR and RTTI
-that would serve both soda-opt and bambu; it has not been run yet.
+`MLIRTilingInterfaceTestPasses`), which soda-opt links, nor `llvm-lit`.
+[setup-llvm.sh](../scripts/external/setup-llvm.sh) builds one LLVM 19.1.5 with clang, MLIR, RTTI and
+those test libraries, and optionally MLIR's Python bindings (`PYTHON_BINDINGS=ON`). Built with
+`./scripts/external/setup-llvm.sh ~/SODA-OPT/llvm-19.1.5-full` it took 15 minutes (14 GB install,
+29 GB build tree, 2 GB source). soda-opt built against it passes all 41 of its lit tests, and the
+bambu branch built with its clang runs the soda-benchmarks flow with the same cycle counts as with
+Homebrew's `llvm@19` ([FlowSurvey.md](FlowSurvey.md#one-llvm-for-every-tool)). It does not
+replace the existing installs yet; this is the one LLVM that can.
 
 ## Prerequisites
 

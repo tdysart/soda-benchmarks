@@ -13,8 +13,11 @@
 # Neither of the two existing LLVMs does both: ~/SODA-OPT/llvm is MLIR only with RTTI off, and
 # Homebrew's llvm@19 is 19.1.7 without MLIR's test libraries (and without llvm-lit).
 #
-# NOT YET RUN. This is a draft: review the options, then run it. Expect roughly an hour and 15 GB
-# on 14 cores (clang and MLIR, with MLIR's tests included).
+# Verified on macOS arm64 (2026-10-21): builds in about 15 minutes on 14 cores (a further minute
+# to add the Python bindings), using 14 GB for install/, 29 GB for build/ and 2 GB for the source.
+# All checks at the end pass; soda-opt built against it passes all 41 of its lit tests, and bambu
+# built with its clang runs the soda-benchmarks flow with the same cycle counts as with Homebrew's
+# llvm@19 (see docs/FlowSurvey.md).
 #
 # Usage:
 #   ./scripts/external/setup-llvm.sh [WORK_DIR]
@@ -33,7 +36,12 @@
 #                      build_llvm.sh)
 #   ENABLE_ASSERTIONS  ON | OFF (default: ON, as soda-opt's build_llvm.sh). Everything that builds
 #                      against this install (bambu's plugins, soda-opt) must use its headers, which
-#                      the ABI-breaking-checks setting changes, so do not mix installs.
+#                      the ABI-breaking-checks setting changes, so do not mix installs. With ON,
+#                      bambu's clang plugins need two fixes that the bambu branch carries
+#                      (plugin_ASTAnalyzer.cpp passed DiagID 0 to RequireCompleteType, and
+#                      TreeHeightReduction.hpp called isFast() on any floating-point instruction);
+#                      both abort only in an LLVM with assertions. A bambu without them needs OFF,
+#                      which is what Homebrew's llvm@19 is.
 #   SHARED             ON | OFF (default: ON): libLLVM, libclang-cpp and libMLIR as shared
 #                      libraries that the tools link to, like Homebrew's llvm@19. bambu's clang
 #                      plugins are linked with -undefined dynamic_lookup and take LLVM's symbols
@@ -42,9 +50,11 @@
 #                      (LLVM_EXPORT_SYMBOLS_FOR_PLUGINS); untested.
 #   TARGETS            LLVM_TARGETS_TO_BUILD (default: host). bambu's macOS flow is -m64 only;
 #                      use "host;X86" or "all" if something needs another target.
-#   PYTHON_BINDINGS    ON | OFF (default: OFF). soda-opt's own Python bindings are disabled and
-#                      torch-mlir carries its own LLVM; ON needs pybind11, nanobind and numpy in
-#                      the Python that PYTHON points to.
+#   PYTHON_BINDINGS    ON | OFF (default: OFF). ON builds MLIR's Python bindings, which soda-opt's
+#                      python/simple-parse.py test needs (without them that one of its 41 lit tests
+#                      is unsupported). LLVM 19.1.5 needs numpy <= 1.26, pybind11 <= 2.10.3 and
+#                      PyYAML in the Python that PYTHON points to (mlir/python/requirements.txt);
+#                      the venv that setup-torch-mlir.sh creates has exactly those.
 #   PYTHON             interpreter for the bindings and for lit (default: python3)
 #   JOBS               parallel build jobs (default: number of CPUs)
 
@@ -181,14 +191,18 @@ To use it:
 
     export PATH="$INSTALL_DIR/bin:\$PATH"
 
-soda-opt (in a new build directory, since its CMake cache holds the old LLVM):
+soda-opt (in a new build directory, since its CMake cache holds the old LLVM; add
+-DPython3_EXECUTABLE=<python> -DPython3_FIND_VIRTUALENV=ONLY when built with PYTHON_BINDINGS=ON,
+then \`ninja soda-opt check-soda\`, since the default target does not build soda-opt):
 
     cmake -G Ninja -S <soda-opt> -B <build> \\
         -DMLIR_DIR=$INSTALL_DIR/lib/cmake/mlir \\
         -DLLVM_DIR=$INSTALL_DIR/lib/cmake/llvm \\
         -DLLVM_EXTERNAL_LIT=$BUILD_DIR/bin/llvm-lit
 
-bambu dev/panda: build it with this clang instead of Homebrew's llvm@19, i.e. put
-$INSTALL_DIR/bin on PATH where MACOS_PORT.md (bambu branch) uses /opt/homebrew/opt/llvm@19/bin, and
-configure with -DPANDA_LIBBAMBU_COMPILER=I386_CLANG19.
+The bambu branch (see MACOS_PORT.md): build it with this clang instead of Homebrew's llvm@19, i.e.
+put $INSTALL_DIR/bin on PATH where MACOS_PORT.md uses /opt/homebrew/opt/llvm@19/bin, export
+SDKROOT=\$(xcrun --show-sdk-path) (this clang does not find the macOS SDK on its own), and configure
+with -DPANDA_LIBBAMBU_COMPILER=I386_CLANG19. To run the soda-benchmarks flow with it, pass
+CLANG_BIN=$INSTALL_DIR/bin to make.
 EOF
