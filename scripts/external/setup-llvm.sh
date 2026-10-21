@@ -27,7 +27,7 @@
 # Overridable environment variables:
 #   LLVM_TAG           tag to build (default: llvmorg-19.1.5, the commit soda-opt's README names)
 #   SRC_DIR            an existing llvm-project checkout at that tag, to skip the download. For
-#                      example ~/SODA-OPT/llvm/llvm-project, which is already at llvmorg-19.1.5
+#                      example the source of an earlier run of this script
 #   BUILD_DIR, INSTALL_DIR   override the locations above
 #   BUILD_TYPE         Release | RelWithDebInfo | Debug (default: RelWithDebInfo, as soda-opt's
 #                      build_llvm.sh)
