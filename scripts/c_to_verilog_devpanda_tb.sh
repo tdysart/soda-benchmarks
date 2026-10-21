@@ -28,7 +28,9 @@
 #   BAMBU_MEMPOLICY       (default: NO_BRAM)
 #   BAMBU_COMPILER        bambu --compiler (default: I386_CLANG19)
 #   BAMBU_M               word size flag (default: -m64 on macOS, where clang has no 32-bit target)
-#   CLANG_BIN             directory with the clang named by --compiler (default: Homebrew llvm@19)
+#   CLANG_BIN             directory with the clang named by --compiler, put first on PATH (default:
+#                         the clang-19 already on PATH, i.e. the LLVM built by
+#                         scripts/external/setup-llvm.sh)
 #   BAMBU_RUN_SIMULATION  true to also simulate with Verilator (default: false)
 #   BAMBU_LIBM            bambu math library, -l<m|m_s|m_newlib|m_musl> (default: m)
 #   BAMBU_MAX_SIM_CYCLES  bambu --max-sim-cycles, the length of the longest simulation (bambu's default is
@@ -55,7 +57,7 @@ BAMBU_TOP="${BAMBU_TOP:-forward_kernel}"
 if [ -z "${BAMBU_M+x}" ]; then
   if [ "$(uname)" = "Darwin" ]; then BAMBU_M="-m64"; else BAMBU_M=""; fi
 fi
-CLANG_BIN="${CLANG_BIN:-/opt/homebrew/opt/llvm@19/bin}"
+CLANG_BIN="${CLANG_BIN:-}"
 
 if ! command -v "$BAMBU_DEVPANDA" &> /dev/null; then
   echo "ERROR: $BAMBU_DEVPANDA could not be found. Set BAMBU_DEVPANDA to a bambu built from dev/panda." >&2
@@ -75,7 +77,12 @@ fi
 BAMBU_HLS="${BAMBU_HLS:-$(cd "$(dirname "$BAMBU_DEVPANDA")/.." && pwd)}"
 export BAMBU_HLS
 export BAMBU_HLS_BACKEND_PATH="${BAMBU_HLS_BACKEND_PATH:-$BAMBU_HLS}"
-export PATH="$CLANG_BIN:$PATH"
+[ -n "$CLANG_BIN" ] && export PATH="$CLANG_BIN:$PATH"
+if [ "$BAMBU_COMPILER" = "I386_CLANG19" ] && ! command -v clang-19 &> /dev/null; then
+  echo "ERROR: clang-19 could not be found. Build the LLVM with scripts/external/setup-llvm.sh and put" >&2
+  echo "       its bin directory on PATH (or set CLANG_BIN to it)." >&2
+  exit 1
+fi
 
 # The backend scripts bambu generates use GNU readlink -e and gawk; shim them on macOS.
 SHIM_DIR="$(mktemp -d)"
@@ -84,7 +91,7 @@ command -v greadlink &> /dev/null && ln -sf "$(command -v greadlink)" "$SHIM_DIR
 command -v gawk &> /dev/null && ln -sf "$(command -v gawk)" "$SHIM_DIR/awk"
 export PATH="$SHIM_DIR:$PATH"
 
-# Homebrew's clang does not find the macOS SDK on its own.
+# The LLVM's clang does not find the macOS SDK on its own.
 if [ "$(uname)" = "Darwin" ]; then
   export SDKROOT="${SDKROOT:-$(xcrun --show-sdk-path)}"
 fi

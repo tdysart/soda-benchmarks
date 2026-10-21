@@ -31,41 +31,65 @@ history of `third_party/llvm/workspace.bzl`, which is where `LLVM_COMMIT` lives)
 
 ## Toolchain versions
 
-Which LLVM each tool of the flow uses. Only the MLIR/PyTorch/TensorFlow path needs the LLVM 19.1.5
-install below; the C examples and the testbench flow itself need only bambu and Homebrew
-`llvm@19`.
+The flow uses **one LLVM 19.1.5** with clang, MLIR and RTTI, built by
+[setup-llvm.sh](../scripts/external/setup-llvm.sh), for everything that needs an LLVM:
 
 | Tool | LLVM it uses | Needed for |
 |---|---|---|
-| soda-opt | built against LLVM 19.1.5 (static, no RTTI) | MLIR examples (`soda_to_llvm.mk`), sb-cli experiments, `kernel_arg_order.sh` |
-| `mlir-opt`, `mlir-translate`, `opt` | the same LLVM 19.1.5 install, on `PATH` | MLIR examples (`tosa_to_linalg.sh`, `linalg_to_llvm.sh`, `llvm_to_ll.sh`, `mlir_to_graph.sh`) |
+| `mlir-opt`, `mlir-translate`, `opt`, `llc`, `llvm-link`, `llvm-ar`, `FileCheck` | that LLVM's `install/bin`, first on `PATH` | MLIR examples (`tosa_to_linalg.sh`, `linalg_to_llvm.sh`, `llvm_to_ll.sh`, `mlir_to_graph.sh`, `link_memref_copy.sh`) |
+| soda-opt | built against that LLVM | MLIR examples (`soda_to_llvm.mk`), sb-cli experiments, `kernel_arg_order.sh` |
+| bambu (the bambu branch: upstream `dev/panda` plus a macOS port, see [PureVerilogTestbench.md](PureVerilogTestbench.md#naming-upstream-devpanda-and-the-bambu-branch)) | built with that LLVM's clang, which it drives as `--compiler=I386_CLANG19` | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, so the clang it drives must be a 19 as well |
 | torch-mlir | its own submodule, LLVM `d16b21b` (19 development), commit `43506726853b` | PyTorch examples; [setup-torch-mlir.sh](../scripts/external/setup-torch-mlir.sh) |
 | TensorFlow MLIR tools (`tf-opt`, `tf-mlir-translate`, `flatbuffer_translate`) | their own LLVM, `acc159aea1e6` (the `release/19.x` branch point), TF commit `d7f515cc2fd8` | TFLite and TensorFlow examples (`tflite_to_tosa.sh`, `graphdef_to_tosa.sh`); [setup-tensorflow-mlir.sh](../scripts/external/setup-tensorflow-mlir.sh) |
-| bambu (the bambu branch: upstream `dev/panda` plus a macOS port, see [PureVerilogTestbench.md](PureVerilogTestbench.md#naming-upstream-devpanda-and-the-bambu-branch)) | Homebrew `llvm@19` (`--compiler=I386_CLANG19`) | the `bambu-devpanda-tb` targets; it reads soda-opt's LLVM 19 IR, so the clang it drives must be a 19 as well |
 | Verilator, SST, verilator-sst | none | the SST runs |
+
+torch-mlir and the TensorFlow tools carry their own LLVM on purpose: their TOSA output has to parse
+with the 19.1.5 `mlir-opt`, which is why their commits were picked (see above).
 
 soda-opt is what sets LLVM 19.1.5. Its README says it was tested with llvm-project commit
 `ab4b5a2db582958af1ee308a790cfdb42bd24720`, which is the `llvmorg-19.1.5` tag, and its dev
 container and CI build `llvmorg-19.1.5` (`LLVM_BRANCH`). Nothing in its build checks the version,
-but it uses LLVM's C++ APIs, which change between releases, so build it against exactly that
-LLVM. The other LLVM 19 tools above come from the same install.
+but it uses LLVM's C++ APIs, which change between releases, so build it against exactly that LLVM.
 
-On macOS, soda-opt's `build_tools/build_llvm.sh` needs one change: it configures LLVM with
-`-DLLVM_ENABLE_LLD=ON`, and lld is not installed with Homebrew's default toolchain.
-[soda-opt-build-llvm-without-lld.patch](../scripts/external/soda-opt-build-llvm-without-lld.patch)
-turns it off (`git apply` it in the soda-opt checkout before building). It is kept here because
-soda-opt is a separate repository (`pnnl/soda-opt`).
+### Building the LLVM
 
-Homebrew's `llvm@19` is not a substitute for that install: it is 19.1.7 and does not ship MLIR's
-test-pass libraries (`MLIRAffineTransformsTestPasses`, `MLIRLinalgTestPasses`,
-`MLIRTilingInterfaceTestPasses`), which soda-opt links, nor `llvm-lit`.
-[setup-llvm.sh](../scripts/external/setup-llvm.sh) builds one LLVM 19.1.5 with clang, MLIR, RTTI and
-those test libraries, and optionally MLIR's Python bindings (`PYTHON_BINDINGS=ON`). Built with
-`./scripts/external/setup-llvm.sh ~/SODA-OPT/llvm-19.1.5-full` it took 15 minutes (14 GB install,
-29 GB build tree, 2 GB source). soda-opt built against it passes all 41 of its lit tests, and the
-bambu branch built with its clang runs the soda-benchmarks flow with the same cycle counts as with
-Homebrew's `llvm@19` ([FlowSurvey.md](FlowSurvey.md#one-llvm-for-every-tool)). It does not
-replace the existing installs yet; this is the one LLVM that can.
+```sh
+./scripts/external/setup-llvm.sh ~/SODA-OPT/llvm-19.1.5-full
+```
+
+(add `PYTHON_BINDINGS=ON PYTHON=<python>` for MLIR's Python bindings, which one of soda-opt's lit
+tests needs; LLVM 19.1.5 wants numpy <= 1.26, pybind11 <= 2.10.3 and PyYAML in that Python, which
+the venv from `setup-torch-mlir.sh` has). It takes about 15 minutes on 14 cores and leaves
+`install/` (14 GB), `build/` (29 GB, only `build/bin/llvm-lit` is needed afterwards) and
+`llvm-project/` (2 GB) in that directory, and it checks the result. What it builds in, and why:
+
+* `clang;mlir`, RTTI on: bambu's clang plugins derive from LLVM's classes and need RTTI.
+* MLIR's tests on (`MLIR_INCLUDE_TESTS=ON`): soda-opt links MLIR's test-pass libraries
+  (`MLIRAffineTransformsTestPasses`, `MLIRLinalgTestPasses`, `MLIRTilingInterfaceTestPasses`),
+  which exist only then, and its lit tests need `FileCheck` and `llvm-lit`.
+* Assertions on, as in soda-opt's own `build_llvm.sh`, and lld off (lld is not part of the
+  default macOS toolchain).
+* Shared LLVM libraries, which the bambu plugins resolve their symbols from.
+
+Homebrew's `llvm@19` (19.1.7, assertions off, no MLIR test libraries, no `llvm-lit`) is not a
+substitute: it builds bambu, so it is a quick baseline for telling whether a problem comes from the
+custom build, but it cannot build soda-opt.
+
+### Building soda-opt against it
+
+```sh
+export PATH=<llvm>/install/bin:$PATH
+cmake -G Ninja -S <soda-opt> -B <build> \
+    -DMLIR_DIR=<llvm>/install/lib/cmake/mlir -DLLVM_DIR=<llvm>/install/lib/cmake/llvm \
+    -DLLVM_EXTERNAL_LIT=<llvm>/build/bin/llvm-lit \
+    -DPython3_EXECUTABLE=<python> -DPython3_FIND_VIRTUALENV=ONLY     # with PYTHON_BINDINGS=ON
+ninja -C <build> soda-opt check-soda       # the default target does not build soda-opt
+```
+
+soda-opt passes all 41 of its lit tests that way, and its output for the flow is byte-identical
+to a build against the earlier MLIR-only LLVM. Building bambu with the same LLVM is in
+`MACOS_PORT.md` of the bambu branch; [FlowSurvey.md](FlowSurvey.md#the-toolchain) lists what was
+checked.
 
 ## Prerequisites
 

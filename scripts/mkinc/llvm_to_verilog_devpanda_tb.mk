@@ -15,7 +15,7 @@
 #
 # Local tools only (no docker). Override on the command line or environment:
 #   BAMBU_DEVPANDA     the dev/panda bambu (an installed one: its settings are found from its path)
-#   BAMBU_COMPILER     bambu --compiler (default I386_CLANG19)    CLANG_BIN  directory of that clang
+#   BAMBU_COMPILER     bambu --compiler (default I386_CLANG19)    CLANG_BIN  directory of that clang (default: clang-19 on PATH)
 #   VERILATOR_SST_SRC  verilator-sst checkout     SST  sst binary
 #   SST_CYCLES         clock cycles for the SST run (see verilator_sst_devpanda_tb.sh)
 #

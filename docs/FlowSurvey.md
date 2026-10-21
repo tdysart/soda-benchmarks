@@ -81,7 +81,7 @@ For LLVM IR input there is no C to run, so:
 | `sed -i` fails on macOS | `tflite_to_tosa.sh`, `link_memref_copy.sh` | BSD-compatible `-i.bak` |
 | `tosa.reshape` rejected by the soda-opt LLVM | `tflite_to_tosa.sh` | `tf-opt` prints the infer-this-dimension marker as INT64_MIN; rewritten to -1 |
 | bambu cannot lower `llvm.objectsize` | `link_memref_copy.sh` | compile `memref_copy.c` with `-D_FORTIFY_SOURCE=0 -fno-builtin` |
-| Apple clang 21 emits IR that LLVM 19's `opt` cannot read | `link_memref_copy.sh` | use a clang of the same major version as `opt` (Homebrew `llvm@19`) |
+| Apple clang 21 emits IR that LLVM 19's `opt` cannot read | `link_memref_copy.sh` | require a clang of the same major version as `opt` (the custom LLVM's; the script stops with a message otherwise) |
 | No `roundevenf` in any bambu libm | `link_memref_copy.sh`, `scripts/lib/roundeven.c` | link a definition into the IR and call it in place of `llvm.roundeven` |
 | No functional unit for `sqrtf` (batch norm) | `c_to_verilog_devpanda_tb.sh` | pass `-lm` (`BAMBU_LIBM`); `-lm` is still a bambu option |
 | bambu fails with `not expected from S_<n> to S_<m>` | `c_to_verilog_devpanda_tb.sh` | the `-MP` setups fail in the mux connection binding on large designs (keyword_spotting, visual_wake_words); the script retries with `BAMBU-BALANCED` |
@@ -146,35 +146,38 @@ scaffolded as described under "Models and PolyBench kernels" there.
 * `sb_cli` should generate the `bambu-devpanda-tb` targets itself.
 * Not covered: the IP-integration recipes (assert, change-location, hw-counters, vector-dot),
   the esp and cpu backends, and the soda-plugins dataflow lit tests.
-* Moving the flow to the one LLVM (below) as the default, and committing the bambu plugin fixes
-  it needs.
+* soda-opt's `build_llvm.sh` recipe is no longer needed: `setup-llvm.sh` supersedes it.
 
-## One LLVM for every tool
+## The toolchain
 
-Homebrew's `llvm@19` (19.1.7) lacks the MLIR test-pass libraries that soda-opt links, and
-`~/SODA-OPT/llvm` has no clang and no RTTI, so the flow used three LLVMs. `scripts/external/setup-llvm.sh`
-builds a single LLVM 19.1.5 with clang, MLIR, RTTI, MLIR's test libraries and optionally the Python
-bindings; it was built into `~/SODA-OPT/llvm-19.1.5-full` and checked as follows.
+The flow runs on one LLVM 19.1.5 with clang, MLIR and RTTI, built by
+`scripts/external/setup-llvm.sh` (see [ModelConversionTools.md](ModelConversionTools.md#toolchain-versions)):
+soda-opt is built against it, `mlir-opt`, `opt` and the other LLVM tools come from it, and the bambu
+branch is built with its clang. It replaced three LLVMs (an MLIR-only one for soda-opt, Homebrew's
+`llvm@19` for bambu, and a shim to `llvm@16` for the blocked DPI path), none of which could do
+everything: Homebrew's lacks the MLIR test-pass libraries soda-opt links, and the MLIR-only one has
+no clang and no RTTI. Homebrew's `llvm@19` stays installed only as a quick baseline. It was built
+into `~/SODA-OPT/llvm-19.1.5-full` and checked as follows.
 
 | Check | Result |
 |---|---|
 | soda-opt configured and built against it (Release) | works; `ninja soda-opt` (the default target does not build it) |
-| soda-opt's lit tests (`check-soda`) | 40 of 41 without the Python bindings (`python/simple-parse.py` unsupported), 41 of 41 with `PYTHON_BINDINGS=ON`, like the existing build |
-| `soda_to_llvm_baseline.sh` with the new soda-opt, `mlir-opt` and `opt` | byte-identical MLIR to the existing toolchain for `keyword_spotting` and `pytorch-to-llvm` |
-| bambu branch built with the new clang (separate install) | builds; regression suite 24 of 24 checks |
-| Flow run with the new soda-opt, bambu and clang | same cycle counts as before: 3mm 26,322, PyTorch 3mm 10,237, `pytorch-to-llvm` 38,997, `anomaly_detection` 1,122,039, `keyword_spotting` 19,836,263 |
+| soda-opt's lit tests (`check-soda`) | 40 of 41 without the Python bindings (`python/simple-parse.py` unsupported), 41 of 41 with `PYTHON_BINDINGS=ON`, like the earlier build |
+| `soda_to_llvm_baseline.sh` with the new soda-opt, `mlir-opt` and `opt` | byte-identical MLIR to the earlier toolchain for `keyword_spotting` and `pytorch-to-llvm` |
+| bambu branch built with the new clang | builds; regression suite 24 of 24 checks |
+| Flow run with the new soda-opt, bambu and clang | same cycle counts as with the earlier toolchain: 3mm 26,322, PyTorch 3mm 10,237, `pytorch-to-llvm` 38,997, `anomaly_detection` 1,122,039, `keyword_spotting` 19,836,263 |
 
 Things the run turned up:
 
-* **The new LLVM has assertions on** (as soda-opt's `build_llvm.sh` does), and two of bambu's clang
+* **The LLVM has assertions on** (as soda-opt's `build_llvm.sh` does), and two of bambu's clang
   plugins abort under it, although they work in an LLVM without assertions: `plugin_ASTAnalyzer.cpp`
   called `RequireCompleteType(loc, T, /*DiagID=*/0)` (clang asserts the diagnostic ID is non-zero;
   `isCompleteType` is the quiet call), and `TreeHeightReduction.hpp` called `isFast()` on any
   floating-point instruction (it is only valid on floating-point math operators). Both are fixed in
-  the bambu branch; a bambu without the fixes needs `ENABLE_ASSERTIONS=OFF`.
-* **The shared-library layout works for the plugins**: they load into the new clang and resolve
+  the bambu branch.
+* **The shared-library layout works for the plugins**: they load into the clang and resolve
   LLVM's symbols from it.
-* **This clang does not find the macOS SDK on its own** (neither does Homebrew's), so scripts that
-  call it set `SDKROOT`; `link_memref_copy.sh` now does so whenever it is unset on macOS.
-* To use it: `CLANG_BIN=<install>/bin` for the make targets, and the new soda-opt, `mlir-opt` and
-  `opt` first on `PATH`.
+* **This clang does not find the macOS SDK on its own**, so the scripts that call it set `SDKROOT`;
+  `tjd_addpath.sh`-style setups should export it too.
+* **Setup:** put the LLVM's `install/bin`, soda-opt's `bin` and the bambu install's `bin` first on
+  `PATH`. The scripts take `clang-19` from `PATH` (`CLANG_BIN` is only needed to override it).

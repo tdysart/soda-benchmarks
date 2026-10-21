@@ -26,16 +26,18 @@ if [ ! -f "$TARGET_LL" ]; then
   exit 1
 fi
 
-# The IR has to be readable by opt, so use a clang of the same LLVM major version when the clang
-# on PATH is another one (Apple's clang is newer than the LLVM that soda-opt is built with).
+# The IR has to be readable by opt, so the clang on PATH must be of the same LLVM major version
+# (Apple's clang is newer than the LLVM that soda-opt is built with). Put the bin directory of
+# the LLVM built by scripts/external/setup-llvm.sh first on PATH.
 CLANG=clang
 CLANG_ENV=""
 if [ -z "${DOCKER_RUN}" ] && command -v opt &> /dev/null; then
   OPT_MAJOR="$(opt --version | sed -n 's/.*LLVM version \([0-9]*\)\..*/\1/p')"
   CLANG_MAJOR="$(clang --version | sed -n 's/.*clang version \([0-9]*\)\..*/\1/p' | head -1)"
-  BREW_CLANG="/opt/homebrew/opt/llvm@${OPT_MAJOR}/bin/clang"
-  if [ "${OPT_MAJOR}" != "${CLANG_MAJOR}" ] && [ -x "${BREW_CLANG}" ]; then
-    CLANG="${BREW_CLANG}"
+  if [ "${OPT_MAJOR}" != "${CLANG_MAJOR}" ]; then
+    echo "ERROR: the clang on PATH is LLVM ${CLANG_MAJOR} but opt is LLVM ${OPT_MAJOR}, which cannot read its IR." >&2
+    echo "       Put the bin directory of the LLVM built by scripts/external/setup-llvm.sh first on PATH." >&2
+    exit 1
   fi
 fi
 # A clang that is not Apple's does not find the macOS SDK on its own.

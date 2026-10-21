@@ -40,7 +40,7 @@ its `m_axi` interfaces in the form upstream `dev/panda` (and so the bambu branch
 
 ```sh
 make output/bambu-devpanda-tb/baseline/08_sst_results.txt \
-  BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu \
+  BAMBU_DEVPANDA=/path/to/install/bin/bambu \
   VERILATOR_SST_SRC=/path/to/verilator-sst \
   SST=/path/to/sst-install/bin/sst
 ```

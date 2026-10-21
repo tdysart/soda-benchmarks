@@ -1,23 +1,20 @@
 #!/bin/bash
 
-# Build one LLVM 19.1.5 (clang and MLIR) that every tool of the flow can use:
+# Build the one LLVM 19.1.5 (clang and MLIR) that every tool of the flow uses:
 #
 #   soda-opt     needs the MLIR it was tested with (19.1.5), including MLIR's test-pass libraries
 #                (MLIRAffineTransformsTestPasses, MLIRLinalgTestPasses, MLIRTilingInterfaceTestPasses)
 #                and FileCheck/lit for its tests. Those exist only when MLIR is built with
-#                MLIR_INCLUDE_TESTS=ON, which Homebrew's llvm@19 does not do.
-#   bambu        (dev/panda, --compiler=I386_CLANG19) needs clang 19 and an LLVM with RTTI, because
-#                its clang plugins derive from LLVM's classes, plus llvm-ar and llvm-ranlib.
+#                MLIR_INCLUDE_TESTS=ON, which distribution packages such as Homebrew's llvm@19 do
+#                not do.
+#   bambu        (the bambu branch, --compiler=I386_CLANG19) needs clang 19 and an LLVM with RTTI,
+#                because its clang plugins derive from LLVM's classes, plus llvm-ar and llvm-ranlib.
 #   mlir-opt, mlir-translate, opt, llc, llvm-link   used by the scripts of this repo.
-#
-# Neither of the two existing LLVMs does both: ~/SODA-OPT/llvm is MLIR only with RTTI off, and
-# Homebrew's llvm@19 is 19.1.7 without MLIR's test libraries (and without llvm-lit).
 #
 # Verified on macOS arm64 (2026-10-21): builds in about 15 minutes on 14 cores (a further minute
 # to add the Python bindings), using 14 GB for install/, 29 GB for build/ and 2 GB for the source.
 # All checks at the end pass; soda-opt built against it passes all 41 of its lit tests, and bambu
-# built with its clang runs the soda-benchmarks flow with the same cycle counts as with Homebrew's
-# llvm@19 (see docs/FlowSurvey.md).
+# built with its clang runs the soda-benchmarks flow (see docs/FlowSurvey.md).
 #
 # Usage:
 #   ./scripts/external/setup-llvm.sh [WORK_DIR]
@@ -40,10 +37,9 @@
 #                      bambu's clang plugins need two fixes that the bambu branch carries
 #                      (plugin_ASTAnalyzer.cpp passed DiagID 0 to RequireCompleteType, and
 #                      TreeHeightReduction.hpp called isFast() on any floating-point instruction);
-#                      both abort only in an LLVM with assertions. A bambu without them needs OFF,
-#                      which is what Homebrew's llvm@19 is.
+#                      both abort only in an LLVM with assertions. A bambu without them needs OFF.
 #   SHARED             ON | OFF (default: ON): libLLVM, libclang-cpp and libMLIR as shared
-#                      libraries that the tools link to, like Homebrew's llvm@19. bambu's clang
+#                      libraries that the tools link to. bambu's clang
 #                      plugins are linked with -undefined dynamic_lookup and take LLVM's symbols
 #                      from the process that loads them, which is what this layout is known to work
 #                      with. With OFF the symbols are exported from the clang executable instead
@@ -200,9 +196,8 @@ then \`ninja soda-opt check-soda\`, since the default target does not build soda
         -DLLVM_DIR=$INSTALL_DIR/lib/cmake/llvm \\
         -DLLVM_EXTERNAL_LIT=$BUILD_DIR/bin/llvm-lit
 
-The bambu branch (see MACOS_PORT.md): build it with this clang instead of Homebrew's llvm@19, i.e.
-put $INSTALL_DIR/bin on PATH where MACOS_PORT.md uses /opt/homebrew/opt/llvm@19/bin, export
-SDKROOT=\$(xcrun --show-sdk-path) (this clang does not find the macOS SDK on its own), and configure
-with -DPANDA_LIBBAMBU_COMPILER=I386_CLANG19. To run the soda-benchmarks flow with it, pass
-CLANG_BIN=$INSTALL_DIR/bin to make.
+The bambu branch (see MACOS_PORT.md): build it with this clang, i.e. with $INSTALL_DIR/bin first on
+PATH, SDKROOT=\$(xcrun --show-sdk-path) exported (this clang does not find the macOS SDK on its own),
+and -DPANDA_LIBBAMBU_COMPILER=I386_CLANG19. The soda-benchmarks scripts then take clang-19 from PATH
+(set CLANG_BIN to override).
 EOF

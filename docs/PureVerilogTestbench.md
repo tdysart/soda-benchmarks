@@ -110,9 +110,13 @@ custom-module and link-handling support the SST run needs.
 
 Verified on macOS 26 (arm64) with Homebrew:
 
-* bambu built from the branch above, following `MACOS_PORT.md` (Homebrew `llvm@19`, `cmake`,
-  `ninja`, `boost`, `verilator`, `coreutils`, `gawk` and so on). Its `bin/bambu` is passed to the
-  make targets as `BAMBU_DEVPANDA`.
+* One LLVM 19.1.5 with clang, MLIR and RTTI, built by
+  [setup-llvm.sh](../scripts/external/setup-llvm.sh) (about 15 minutes; see
+  [ModelConversionTools.md](ModelConversionTools.md#toolchain-versions)), with its `install/bin`
+  first on `PATH`. The bambu branch, soda-opt and the MLIR tools are all built with or against it.
+* bambu built from the branch above with that LLVM, following `MACOS_PORT.md` (plus Homebrew
+  `cmake`, `ninja`, `boost`, `verilator`, `coreutils`, `gawk` and so on). Its `bin/bambu` is passed
+  to the make targets as `BAMBU_DEVPANDA`, or put first on `PATH`.
 * SST-Core 16.0, built from upstream. It is not covered here; `sst` and `sst-config` must be in
   the same directory.
 * Python 3.
@@ -159,7 +163,7 @@ make command line or in the environment:
 | `BAMBU_MAX_SIM_CYCLES` | longest simulation (bambu's default, 200M cycles) |
 | `BAMBU_LIBM` | bambu math library, `-l<m\|m_s\|m_newlib\|m_musl>` (`m`) |
 | `BAMBU_SETUP` | bambu `--experimental-setup` (`BAMBU-BALANCED-MP`, then `BAMBU-BALANCED` if that fails) |
-| `BAMBU_M`, `BAMBU_COMPILER`, `CLANG_BIN` | `-m64` on macOS, `I386_CLANG19`, Homebrew `llvm@19`'s directory |
+| `BAMBU_M`, `BAMBU_COMPILER`, `CLANG_BIN` | `-m64` on macOS, `I386_CLANG19`, the directory of the LLVM's clang if it is not already first on `PATH` |
 
 The scripts behind the targets are
 [c_to_verilog_devpanda_tb.sh](../scripts/c_to_verilog_devpanda_tb.sh) (bambu; it takes C or LLVM
@@ -225,7 +229,7 @@ bambu branch, is the only bambu that accepts it. Using it:
 
 1. Run the pipeline with `machine-bits=64` (the default, `-m32`, has no sysroot on arm64 macOS):
    `sodap-dataflow-to-llvm-pipeline{top-func=forward ... machine-bits=64}`, with `clangxx` and
-   `include-panda-path` pointing at the `llvm@19` clang++ and `<install>/include/panda`.
+   `include-panda-path` pointing at the LLVM's clang++ and `<install>/include/panda`.
 2. Write a C testbench whose `main` calls the top function and whose definition of the top
    function is the reference model (the IR cannot run natively: its `ac_channel` operations only
    exist in hardware).

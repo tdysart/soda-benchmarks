@@ -58,7 +58,7 @@ uses local tools only, not the docker image:
 
 ```sh
 make output/bambu-devpanda-tb/transformed/07_results.txt \
-  BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu
+  BAMBU_DEVPANDA=/path/to/install/bin/bambu
 ```
 
 [reference_testbench.c](reference_testbench.c) is the C testbench. It is not called forward_kernel_testbench.c: soda-opt writes a file of that name into the working directory while lowering, which would overwrite it.
@@ -90,7 +90,7 @@ component and runs it under SST. It needs:
 
 ```sh
 make output/bambu-devpanda-tb/transformed/08_sst_results.txt \
-  BAMBU_DEVPANDA=/path/to/install-devpanda19/bin/bambu \
+  BAMBU_DEVPANDA=/path/to/install/bin/bambu \
   VERILATOR_SST_SRC=/path/to/verilator-sst \
   SST=/path/to/sst-install/bin/sst
 ```
