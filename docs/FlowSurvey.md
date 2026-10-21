@@ -120,7 +120,7 @@ The make targets, variables and prerequisites are in
 [PureVerilogTestbench.md](PureVerilogTestbench.md). The environment used for this survey:
 
 ```bash
-source tjd_addpath.sh                      # tools; adds the bambu branch's install to PATH
+source scripts/soda_env.sh                 # tools: the LLVM, soda-opt, the bambu branch's install
 export PATH=$HOME/SSTstable/sst16.0/elements-install/bin:$HOME/SSTstable/sst16.0/core-install/bin:$PATH
 export PYTHONPATH=$HOME/SODA-OPT/torch-mlir/build/tools/torch-mlir/python_packages/torch_mlir
 source $HOME/SODA-OPT/torch-mlir/venv/bin/activate      # torch and torchvision
@@ -178,6 +178,6 @@ Things the run turned up:
 * **The shared-library layout works for the plugins**: they load into the clang and resolve
   LLVM's symbols from it.
 * **This clang does not find the macOS SDK on its own**, so the scripts that call it set `SDKROOT`;
-  `tjd_addpath.sh`-style setups should export it too.
+  `scripts/soda_env.sh` exports it.
 * **Setup:** put the LLVM's `install/bin`, soda-opt's `bin` and the bambu install's `bin` first on
   `PATH`. The scripts take `clang-19` from `PATH` (`CLANG_BIN` is only needed to override it).

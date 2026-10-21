@@ -35,26 +35,34 @@ Two different things are called "dev/panda" in conversation, so this page keeps 
   as it moves). **Everything on this page that says "bambu" means a bambu built from this
   branch**, and `MACOS_PORT.md` at its root is its documentation.
 
-The `devpanda` in `BAMBU_DEVPANDA`, `bambu-devpanda-tb` and the `*_devpanda_tb` script names
-refers to that branch: `BAMBU_DEVPANDA` is the path of its installed `bin/bambu`.
+Names in this repository that contain `devpanda` (the `BAMBU_DEVPANDA` variable, the
+`bambu-devpanda-tb` make targets and the `*_devpanda_tb.sh` scripts) all refer to the bambu branch
+defined above. `BAMBU_DEVPANDA` is the path of the `bin/bambu` installed from that branch.
 
 ## The flow
 
 ```text
 C, PyTorch, TFLite or TensorFlow source
-        |  torch-mlir / tf-opt / mlir-opt            (not for C input)
-        v
-MLIR (TOSA, linalg) --soda-opt--> LLVM IR
-        |
-        v
-bambu (the bambu branch) -------> Verilog design (06_verilog.v)
-        |  runs the C testbench natively and records the memory images
-        v
-pure-Verilog testbench (bambu_testbench.v, one `clock` port)
-        |                                   |
-        v                                   v
-bambu's own Verilator run          verilator-sst component, driven by SST
-(07_results.txt)                   (08_sst_results.txt)
+   |
+   |  torch-mlir (PyTorch) or tf-opt (TFLite, TensorFlow), then mlir-opt
+   |  (a C source skips this step and the next one)
+   v
+MLIR (TOSA, then linalg)
+   |
+   |  soda-opt, then mlir-translate
+   v
+LLVM IR
+   |
+   |  bambu (the bambu branch); it also runs the C testbench natively
+   |  and records the memory images
+   v
+Verilog design (06_verilog.v)
+and pure-Verilog testbench (bambu_testbench.v, one `clock` port)
+   |                                    |
+   |  bambu's own Verilator run         |  verilator-sst builds the testbench into
+   |                                    |  an SST component, which SST clocks
+   v                                    v
+07_results.txt                      08_sst_results.txt
 ```
 
 Both runs replay the same recorded inputs and compare the results with the same expected images,
@@ -114,6 +122,8 @@ Verified on macOS 26 (arm64) with Homebrew:
   [setup-llvm.sh](../scripts/external/setup-llvm.sh) (about 15 minutes; see
   [ModelConversionTools.md](ModelConversionTools.md#toolchain-versions)), with its `install/bin`
   first on `PATH`. The bambu branch, soda-opt and the MLIR tools are all built with or against it.
+  [scripts/soda_env.sh](../scripts/soda_env.sh) (`source scripts/soda_env.sh`) puts all of them on
+  `PATH` and sets `SDKROOT`; its header lists the locations it expects and how to override them.
 * bambu built from the branch above with that LLVM, following `MACOS_PORT.md` (plus Homebrew
   `cmake`, `ninja`, `boost`, `verilator`, `coreutils`, `gawk` and so on). Its `bin/bambu` is passed
   to the make targets as `BAMBU_DEVPANDA`, or put first on `PATH`.

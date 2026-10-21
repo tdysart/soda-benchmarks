@@ -3,6 +3,14 @@
 This directory contains scripts that are used to convert the input,
 typically a model in a high-level language, into MLIR or lower abstraction.
 
+## Environment
+
+* [soda_env.sh](soda_env.sh) - Source it (`source scripts/soda_env.sh`) to put the tools of the flow
+  on `PATH`: the LLVM from [external/setup-llvm.sh](external/setup-llvm.sh) (`clang`, `mlir-opt`,
+  `opt`, ...), soda-opt, the bambu branch's install, the TensorFlow and torch-mlir tools, and
+  optionally SST (`SST_HOME`); it also sets `SDKROOT` on macOS. Locations are overridable; see its
+  header.
+
 ## Model Conversion
 
 The following scripts are used to translate models from high-level frameworks
