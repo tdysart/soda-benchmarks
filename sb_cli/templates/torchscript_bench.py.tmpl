@@ -41,7 +41,7 @@ def _c_array(values, per_line: int = 8) -> str:
 
 
 def emit_testdata(path: str, arg_order: list[int] | None = None) -> None:
-    """Write a C header holding this kernel's inputs and a PyTorch golden result.
+    """Write a C header holding this kernel's inputs and the PyTorch golden results.
 
     The header carries everything that varies per kernel — how many parameters
     `forward_kernel` takes, in what order, and how big each one is — so that the
@@ -52,14 +52,23 @@ def emit_testdata(path: str, arg_order: list[int] | None = None) -> None:
     bare-pointer memref convention the kernel is lowered with passes each memref
     as exactly one pointer.
 
+    A kernel may return several tensors (bicg and mvt return two): each gets a
+    destination buffer, after the inputs in @forward's signature, and a golden
+    array. With one result the header has the names it always had (td_out,
+    td_golden, TD_OUT, TD_OUT_N); with more they are numbered (td_out0,
+    td_golden0, TD_OUT_N0, ...) and there is no TD_OUT. Either way TD_NOUT is the
+    number of results and TD_OUTPUTS(X) expands X(buffer, golden, count) once per
+    result, in order, which is how the driver walks them.
+
     Args:
         path: Where to write the header.
-        arg_order: Indices into `@forward`'s parameter list, in the order the
-            *outlined* `forward_kernel` takes them —
-            `scripts/kernel_arg_order.sh` produces it. `-soda-outline-bambu-code`
-            orders parameters by first use rather than by signature, so for gemm
-            this is `[3, 4, 0, 1, 2, 5]` and calling in signature order silently
-            computes the wrong thing. Defaults to the identity.
+        arg_order: Indices into `@forward`'s parameter list (the inputs, then one
+            destination buffer per result), in the order the *outlined*
+            `forward_kernel` takes them — `scripts/kernel_arg_order.sh` produces
+            it. `-soda-outline-bambu-code` orders parameters by first use rather
+            than by signature, so for gemm this is `[3, 4, 0, 1, 2, 5]` and
+            calling in signature order silently computes the wrong thing.
+            Defaults to the identity.
     """
     dtype_name = "$dtype"
     if dtype_name not in _C_TYPES:
@@ -75,23 +84,20 @@ def emit_testdata(path: str, arg_order: list[int] | None = None) -> None:
     with torch.no_grad():
         golden = model(*inputs)
 
-    if isinstance(golden, tuple):
-        raise SystemExit(
-            "--emit-testdata supports single-output kernels only; "
-            f"{'$kernel_name'} returns {len(golden)} tensors"
-        )
+    goldens = list(golden) if isinstance(golden, tuple) else [golden]
 
     ctype = _C_TYPES[dtype_name]
-    out_n = golden.numel()
+    n_out = len(goldens)
 
-    # @forward takes the inputs first and the destination buffer last, which is
-    # what bufferization leaves behind, so index len(inputs) is the output.
+    # @forward takes the inputs first and the destination buffers last, which is
+    # what bufferization leaves behind, so index len(inputs) + k is result k.
     n_in = len(inputs)
     if arg_order is None:
-        arg_order = list(range(n_in + 1))
-    if sorted(arg_order) != list(range(n_in + 1)):
+        arg_order = list(range(n_in + n_out))
+    if sorted(arg_order) != list(range(n_in + n_out)):
         raise SystemExit(
-            f"--arg-order must be a permutation of 0..{n_in}, got {arg_order}"
+            f"--arg-order must be a permutation of 0..{n_in + n_out - 1} "
+            f"({n_in} inputs and {n_out} results), got {arg_order}"
         )
 
     def shape(tensor):
@@ -126,27 +132,40 @@ def emit_testdata(path: str, arg_order: list[int] | None = None) -> None:
         parts.append("};")
         parts.append("")
 
+    # One result keeps the names the header has always had; several are numbered.
+    out_names, golden_names, count_names = [], [], []
+    for k, g in enumerate(goldens):
+        suffix = "" if n_out == 1 else str(k)
+        out_names.append(f"td_out{suffix}")
+        golden_names.append(f"td_golden{suffix}")
+        count_names.append(f"TD_OUT_N{suffix}")
+        parts += [
+            f"/* result{'' if n_out == 1 else ' ' + str(k)}: shape {shape(g)} */",
+            f"static td_elem_t {out_names[-1]}[{g.numel()}];",
+            "",
+            f"static const td_elem_t {golden_names[-1]}[{g.numel()}] = {{",
+            _c_array(g.reshape(-1).tolist()),
+            "};",
+            "",
+        ]
+    if n_out == 1:
+        parts += ["#define TD_OUT     td_out"]
+    parts += [f"#define {count_names[k]} {goldens[k].numel()}" for k in range(n_out)]
     parts += [
-        f"/* result: shape {shape(golden)} */",
-        f"static td_elem_t td_out[{out_n}];",
+        f"#define TD_NOUT    {n_out}",
+        "/* TD_OUTPUTS(X): X(buffer, golden, count) for each result, in order */",
+        "#define TD_OUTPUTS(X) "
+        + " ".join(f"X({out_names[k]}, {golden_names[k]}, {count_names[k]})" for k in range(n_out)),
         "",
-        f"static const td_elem_t td_golden[{out_n}] = {{",
-        _c_array(golden.reshape(-1).tolist()),
-        "};",
-        "",
-        "#define TD_OUT     td_out",
-        f"#define TD_OUT_N   {out_n}",
-        "",
+    ]
+    call_names = names + out_names  # @forward's parameters: the inputs, then the result buffers
+    parts += [
         "/* forward_kernel's parameter order, which -soda-outline-bambu-code",
         f" * derived by first use: {arg_order} into @forward's signature. */",
-        "#define TD_CALL(F) F("
-        + ", ".join(names[i] if i < n_in else "td_out" for i in arg_order)
-        + ")",
+        "#define TD_CALL(F) F(" + ", ".join(call_names[i] for i in arg_order) + ")",
         # A real prototype rather than an empty parameter list: C2x removed those,
         # and the arity is only known here.
-        "#define TD_DECL(F) void F("
-        + ", ".join(["td_elem_t *"] * len(arg_order))
-        + ")",
+        "#define TD_DECL(F) void F(" + ", ".join(["td_elem_t *"] * len(arg_order)) + ")",
         "",
         "#endif /* SODA_TESTDATA_H */",
         "",

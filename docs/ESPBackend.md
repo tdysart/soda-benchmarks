@@ -162,6 +162,13 @@ kernel-specific is in the `output/testdata.h` that `torchscript.py
 golden from running the PyTorch model on them, and the macros `TD_CALL` and
 `TD_DECL` that spell the call, since C cannot express a variable arity.
 
+A kernel may return several tensors (bicg and mvt return two). Each result gets a
+destination buffer, after the inputs in `@forward`'s signature, and a golden
+array: with one result they are `td_out` and `td_golden` as always, with more
+they are numbered (`td_out0`, `td_golden0`, ...). `TD_NOUT` is the number of
+results and `TD_OUTPUTS(X)` expands `X(buffer, golden, count)` once per result,
+which is how the driver walks them; it reports the result a mismatch is in.
+
 `TD_CALL` is where a subtlety lives. `-soda-outline-bambu-code` orders
 `forward_kernel`'s parameters **by first use inside the outlined region**, not by
 `@forward`'s signature — for gemm it turns `(alpha, beta, C, A, B, out)` into
