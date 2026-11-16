@@ -36,6 +36,9 @@
 #   BAMBU_MAX_SIM_CYCLES  bambu --max-sim-cycles, the length of the longest simulation (bambu's default is
 #                         200000000; a baseline CNN can need more)
 #   BAMBU_TOP             top function (default: forward_kernel)
+#   BAMBU_BASE_ADDRESS    bambu --base-address: where the objects bambu allocates outside the top module (its
+#                         malloc heap) start; decimal or 0x... (bambu itself reads 0x... as 0). Default 0x40000000.
+#                         soda-sst-system moves a kernel built at the default at run time (docs/Addressing.md)
 #   BAMBU_SETUP           bambu --experimental-setup (default: BAMBU-BALANCED-MP, then BAMBU-BALANCED if
 #                         that fails in the mux connection binding)
 
@@ -123,6 +126,7 @@ run_bambu() {
 	--generate-interface=INFER \
 	$SIMULATION_ARGS \
 	${BAMBU_MAX_SIM_CYCLES:+--max-sim-cycles=$BAMBU_MAX_SIM_CYCLES} \
+	${BAMBU_BASE_ADDRESS:+--base-address=$((BAMBU_BASE_ADDRESS))} \
 	--top-fname=$BAMBU_TOP \
 	input.$INPUT_EXT 2>&1 | tee bambu-log
 }
