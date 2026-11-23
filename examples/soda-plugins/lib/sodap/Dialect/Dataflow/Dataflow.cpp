@@ -48,12 +48,18 @@ void DataflowDialect::initialize() {
 }
 
 //===----------------------------------------------------------------------===//
-// StreamOp, StreamReadOp, and StreamWriteOp
+// StreamOp, StreamReadOp, StreamPeekOp, and StreamWriteOp
 //===----------------------------------------------------------------------===//
 
 LogicalResult StreamOp::verify() {
-  if (getDepth() != llvm::cast<StreamType>(getChannel().getType()).getDepth())
+  auto channelType = llvm::cast<StreamType>(getChannel().getType());
+  if (getDepth() != channelType.getDepth())
     return emitOpError("stream channel depth is not aligned");
+  // A channel declared here lives inside the design; only an argument can be
+  // a port of it.
+  if (channelType.isAxis())
+    return emitOpError("declares a channel inside the design, which cannot "
+                       "be an axis port");
   return success();
 }
 
@@ -70,6 +76,13 @@ LogicalResult StreamReadOp::verify() {
     if (llvm::cast<StreamType>(getChannel().getType()).getElementType() !=
         getResult().getType())
       return emitOpError("result type doesn't align with channel type");
+  return success();
+}
+
+LogicalResult StreamPeekOp::verify() {
+  if (llvm::cast<StreamType>(getChannel().getType()).getElementType() !=
+      getResult().getType())
+    return emitOpError("result type doesn't align with channel type");
   return success();
 }
 

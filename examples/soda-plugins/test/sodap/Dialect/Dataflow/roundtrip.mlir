@@ -23,6 +23,14 @@ func.func @stream_read_dropped(%c: !dataflow.stream<i32, 4>) {
   return
 }
 
+// A stream_peek reads the front value without popping it.
+// CHECK-LABEL: func.func @stream_peek
+func.func @stream_peek(%c: !dataflow.stream<i32, 4>) -> i32 {
+  // CHECK: %{{.*}} = dataflow.stream_peek %{{.*}} : (!dataflow.stream<i32, 4>) -> i32
+  %r = dataflow.stream_peek %c : (!dataflow.stream<i32, 4>) -> i32
+  return %r : i32
+}
+
 // Stream of a non-scalar element type.
 // CHECK-LABEL: func.func @stream_of_vector
 func.func @stream_of_vector(%c: !dataflow.stream<vector<4xf32>, 16>) {
@@ -100,5 +108,20 @@ func.func @node_with_params(%arg0: memref<8xf32>, %p: index) {
     }
     dataflow.yield
   }
+  return
+}
+
+// The interface is the optional third parameter of the stream type: axis
+// survives a print/parse cycle, and fifo, the default, is not printed at all.
+// CHECK-LABEL: func.func @stream_interfaces
+// CHECK-SAME: %{{.*}}: !dataflow.stream<i64, 8, axis>
+// CHECK-SAME: %{{.*}}: !dataflow.stream<i32, 16>)
+func.func @stream_interfaces(%req: !dataflow.stream<i64, 8, axis>,
+                             %data: !dataflow.stream<i32, 16, fifo>) {
+  // CHECK: dataflow.stream_read %{{.*}} : (!dataflow.stream<i32, 16>) -> i32
+  %v = dataflow.stream_read %data : (!dataflow.stream<i32, 16, fifo>) -> i32
+  %r = arith.extui %v : i32 to i64
+  // CHECK: dataflow.stream_write %{{.*}}, %{{.*}} : <i64, 8, axis>, i64
+  dataflow.stream_write %req, %r : <i64, 8, axis>, i64
   return
 }

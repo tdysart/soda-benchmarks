@@ -98,6 +98,8 @@ struct ChannelInfo {
   LLVM::LLVMFunctionType readType;
   std::string writeSymbol;
   LLVM::LLVMFunctionType writeType;
+  std::string peekSymbol;
+  LLVM::LLVMFunctionType peekType;
 
   unsigned alignment;
 };
@@ -146,6 +148,8 @@ LogicalResult ConvertDataflowToLLVM::collectSpecializations(
       streamType = readOp.getChannel().getType();
     else if (auto writeOp = dyn_cast<StreamWriteOp>(op))
       streamType = writeOp.getChannel().getType();
+    else if (auto peekOp = dyn_cast<StreamPeekOp>(op))
+      streamType = peekOp.getChannel().getType();
     else
       return WalkResult::advance();
 
@@ -204,7 +208,10 @@ ConvertDataflowToLLVM::buildSpecializations(ArrayRef<Type> elementTypes) {
          << " __df_read_" << id << "(C_" << id << " *p) { return p->read(); }\n"
          << "extern \"C\" __attribute__((always_inline)) void __df_write_" << id
          << "(C_" << id << " *p, " << bambuTypeNameStr
-         << " v) { p->write(v); }\n\n";
+         << " v) { p->write(v); }\n"
+         << "extern \"C\" __attribute__((always_inline)) " << bambuTypeNameStr
+         << " __df_peek_" << id << "(C_" << id
+         << " *p) { return p->peek(); }\n\n";
     }
   }
 
@@ -278,6 +285,7 @@ ConvertDataflowToLLVM::buildSpecializations(ArrayRef<Type> elementTypes) {
         {"__df_dtor_", &info.dtorSymbol, &info.dtorType},
         {"__df_read_", &info.readSymbol, &info.readType},
         {"__df_write_", &info.writeSymbol, &info.writeType},
+        {"__df_peek_", &info.peekSymbol, &info.peekType},
     };
 
     for (auto &entry : wanted) {
@@ -389,6 +397,22 @@ void ConvertDataflowToLLVM::runOnOperation() {
       // cannot fail, which is the same assumption the HLS C++ backend makes.
       builder.create<LLVM::CallOp>(loc, func,
                                    ValueRange{writeOp.getChannel(), payload});
+      toErase.push_back(op);
+      return;
+    }
+
+    if (auto peekOp = dyn_cast<StreamPeekOp>(op)) {
+      auto elementType =
+          cast<StreamType>(peekOp.getChannel().getType()).getElementType();
+      auto &info = channels[elementType];
+      auto call = builder.create<LLVM::CallOp>(
+          loc, getOrInsertFunc(info.peekSymbol, info.peekType),
+          ValueRange{peekOp.getChannel()});
+      Value payload = call.getResult();
+      // Same payload fix-up as stream_read.
+      if (payload.getType() != elementType)
+        payload = builder.create<LLVM::BitcastOp>(loc, elementType, payload);
+      peekOp.getResult().replaceAllUsesWith(payload);
       toErase.push_back(op);
       return;
     }

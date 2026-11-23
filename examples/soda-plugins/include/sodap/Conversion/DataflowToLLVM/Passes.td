@@ -43,8 +43,11 @@ def EmitBambuArchitecture :
   let summary = "Emit the Bambu --architecture-xml description of the design";
   let description = [{
     Must run while the stream types are still present. Emits one <function>
-    per node: the top as dataflow_top, every callee as dataflow_module, with a
-    fifo bundle for every stream and an array bundle for every memref.
+    per non-external func.func: the top as dataflow_top, the rest as
+    dataflow_module. Each parameter gets a positional bundle P<index>: fifo
+    for a stream, array for a memref, default for a scalar. A stream typed
+    `axis` (see sodap-dataflow-infer-top-interface) is an axis bundle on the
+    top and stays a fifo on the node it is passed to.
   }];
   let options = [
     Option<"xmlFileName", "file", "std::string",
@@ -54,7 +57,9 @@ def EmitBambuArchitecture :
     Option<"includePandaPath", "include-panda-path", "std::string",
            /*default=*/"SODAP_BAMBU_INCLUDE",
            "Directory holding ac_channel.h, named in the includes= of every "
-           "stream parameter">
+           "stream parameter">,
+    Option<"writeToTerminal", "write-to-terminal", "bool", /*default=*/"false",
+           "Print the XML to stdout instead of writing `file`">
   ];
   let dependentDialects = ["::mlir::sodap::dataflow::DataflowDialect"];
 }

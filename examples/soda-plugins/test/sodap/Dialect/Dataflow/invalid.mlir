@@ -17,6 +17,14 @@ func.func @stream_read_type_mismatch(%c: !dataflow.stream<f32, 8>) {
 
 // -----
 
+func.func @stream_peek_type_mismatch(%c: !dataflow.stream<f32, 8>) {
+  // expected-error @+1 {{result type doesn't align with channel type}}
+  %r = dataflow.stream_peek %c : (!dataflow.stream<f32, 8>) -> i32
+  return
+}
+
+// -----
+
 func.func @stream_write_type_mismatch(%c: !dataflow.stream<f32, 8>, %v: i32) {
   // expected-error @+1 {{value type doesn't align with channel type}}
   dataflow.stream_write %c, %v : <f32, 8>, i32
@@ -82,5 +90,22 @@ func.func @bad_directive_bool() attributes {
 func.func @bad_resource_keyword() attributes {
     // expected-error @+1 {{expected 'dsp'}}
     resource = #dataflow.r<lut=1, dspX=2, bram=3>} {
+  return
+}
+
+// -----
+
+func.func @stream_op_axis() {
+  // A channel declared inside the design cannot be one of its ports.
+  // expected-error @+1 {{declares a channel inside the design, which cannot be an axis port}}
+  %c = dataflow.stream {depth = 8 : i32} : <f32, 8, axis>
+  return
+}
+
+// -----
+
+// expected-error @+2 {{invalid stream interface (fifo or axis) specification: m_axi}}
+// expected-error @+1 {{failed to parse StreamType parameter 'interface'}}
+func.func @bad_stream_interface(%c: !dataflow.stream<f32, 8, m_axi>) {
   return
 }
