@@ -29,8 +29,12 @@ FLOWS: tuple[str, ...] = ("baseline", "optimized", "transformed")
 
 # What consumes the LLVM IR. "bambu" synthesizes it; "cpu" links it into a native
 # executable and runs it; "esp" compiles it for the Ariane RISC-V core an ESP SoC
-# is built around. "gpu" is still reserved.
-BACKENDS: tuple[str, ...] = ("bambu", "cpu", "esp")
+# is built around. "bambu-tb" synthesizes it too, but checks it with bambu's
+# pure-Verilog testbench (--testbench-style=verilog) on the kernel's real inputs,
+# and can finish in a model directory for a model consumer such as
+# soda-sst-system (stage "model"; scripts/mkinc/llvm_to_verilog_devpanda_tb.mk).
+# "gpu" is still reserved.
+BACKENDS: tuple[str, ...] = ("bambu", "cpu", "esp", "bambu-tb")
 
 # Ordered by depth, which is also the order `_supported_stages` reports them in.
 # "object" and "binary" are the two compile-and-link stages the cpu/esp backends
@@ -41,6 +45,7 @@ STAGES: tuple[str, ...] = (
     "binary",
     "verilog",
     "simulation",
+    "model",
     "gds",
 )
 
@@ -87,6 +92,13 @@ _TARGET_TEMPLATES: dict[tuple[str, str], str] = {
     ("esp", "llvm"): "$(ODIR)/05_llvm_{flow}.ll",
     ("esp", "object"): "$(ODIR)/esp/{flow}/06_kernel_riscv.o",
     ("esp", "binary"): "$(ODIR)/esp/{flow}/07_kernel.riscv",
+    # bambu-tb: bambu's pure-Verilog testbench on the real inputs (testdata.h).
+    # "model" adds model.json beside bambu's output: the kernel's parameters, the
+    # check of its results against PyTorch's, and its interface.
+    ("bambu-tb", "llvm"): "$(ODIR)/05_llvm_{flow}.ll",
+    ("bambu-tb", "verilog"): "$(ODIR)/bambu-devpanda-tb/{flow}/06_verilog.v",
+    ("bambu-tb", "simulation"): "$(ODIR)/bambu-devpanda-tb/{flow}/07_results.txt",
+    ("bambu-tb", "model"): "$(ODIR)/bambu-devpanda-tb/{flow}/model.json",
 }
 
 

@@ -105,6 +105,31 @@ class TestResolveTarget:
         got = resolve_target(flow, "bambu", stage, device="nangate45")
         assert got == expected.format(flow=flow)
 
+    @pytest.mark.parametrize("flow", ["baseline", "optimized", "transformed"])
+    @pytest.mark.parametrize(
+        ("stage", "expected"),
+        [
+            ("llvm", "$(ODIR)/05_llvm_{flow}.ll"),
+            ("verilog", "$(ODIR)/bambu-devpanda-tb/{flow}/06_verilog.v"),
+            ("simulation", "$(ODIR)/bambu-devpanda-tb/{flow}/07_results.txt"),
+            ("model", "$(ODIR)/bambu-devpanda-tb/{flow}/model.json"),
+        ],
+    )
+    def test_bambu_tb_stages(self, flow: str, stage: str, expected: str) -> None:
+        """The bambu-tb backend resolves to the pure-Verilog testbench's rule paths."""
+        from sb_cli.flow import resolve_target
+
+        got = resolve_target(flow, "bambu-tb", stage, device="nangate45")
+        assert got == expected.format(flow=flow)
+
+    def test_model_stage_only_on_bambu_tb(self) -> None:
+        """model.json needs the real-input testbench, so only bambu-tb reaches it."""
+        from sb_cli.flow import _supported_stages
+
+        assert "model" in _supported_stages("bambu-tb")
+        for backend in ("bambu", "cpu", "esp"):
+            assert "model" not in _supported_stages(backend)
+
     def test_gds_platform_strips_corner_suffix(self) -> None:
         """Bambu corner suffixes are not part of the OpenROAD results path."""
         from sb_cli.flow import gds_platform

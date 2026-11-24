@@ -47,6 +47,11 @@ ESP_APP_NAME?=$experiment_name
 $ip_integration_block
 include $$(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
 
+# Rules for the bambu-tb backend: bambu's pure-Verilog testbench on the kernel's
+# real inputs (made from testdata.h), and the model directory with model.json.
+SIMULATION_FILE_PATH?=$$(ODIR)/bambu_testbench.c
+include $$(SCRIPTS_DIR)/mkinc/llvm_to_verilog_devpanda_tb.mk
+
 # Include rules to generate gds files with openroad
 include $$(SCRIPTS_DIR)/mkinc/verilog_to_gds.mk
 

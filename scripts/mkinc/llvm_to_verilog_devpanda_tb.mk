@@ -5,6 +5,8 @@
 #
 #   $(ODIR)/bambu-devpanda-tb/<strategy>/06_verilog.v    Verilog
 #   $(ODIR)/bambu-devpanda-tb/<strategy>/07_results.txt  also simulate with Verilator
+#   $(ODIR)/bambu-devpanda-tb/<strategy>/model.json     also check against PyTorch and describe the
+#                                  model (needs $(ODIR)/testdata.h: sb_cli's bambu-tb backend)
 #   $(ODIR)/bambu-devpanda-tb/<strategy>/08_sst_results.txt
 #                                  run the testbench under SST via verilator-sst
 #
@@ -50,6 +52,19 @@ $(ODIR)/bambu-devpanda-tb/%/08_sst_results.txt: $(ODIR)/bambu-devpanda-tb/%/07_r
 	SST_CYCLES=$(SST_CYCLES) \
 	TOP_FNAME=forward_kernel \
 	$(SCRIPTS_DIR)/verilator_sst_devpanda_tb.sh $(@D) $@
+
+# bambu's testbench on the kernel's real inputs, for an experiment with test data (sb_cli's
+# bambu-tb backend sets SIMULATION_FILE_PATH to it). soda-opt's own testbench sets every input
+# to 1.0, which hides swapped arguments and similar errors; see scripts/gen_bambu_tb.py.
+$(ODIR)/bambu_testbench.c: $(ODIR)/testdata.h $(SCRIPTS_DIR)/gen_bambu_tb.py $(SCRIPTS_DIR)/testdata.py
+	python3 $(SCRIPTS_DIR)/gen_bambu_tb.py $< $@
+
+# The model directory: model.json beside bambu's output, with the check of the results against
+# PyTorch's (scripts/write_model_json.py; the format is soda-sst-system's docs/ModelFormat.md).
+# It is written even when that check fails, so the verdict can be read, and the rule then fails.
+$(ODIR)/bambu-devpanda-tb/%/model.json: $(ODIR)/bambu-devpanda-tb/%/07_results.txt $(ODIR)/testdata.h \
+    $(SCRIPTS_DIR)/write_model_json.py $(SCRIPTS_DIR)/check_golden.py $(SCRIPTS_DIR)/testdata.py
+	python3 $(SCRIPTS_DIR)/write_model_json.py $(@D) $(ODIR)/testdata.h
 
 # Keep the simulation result; make would otherwise delete it as an intermediate of the SST rule.
 .PRECIOUS: $(ODIR)/bambu-devpanda-tb/%/07_results.txt
