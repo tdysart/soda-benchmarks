@@ -5,10 +5,10 @@
 
 It has the shape of the one soda-opt writes during lowering (one array per argument, m_param_alloc,
 the call), but with the kernel's real inputs (PolyBench's init_array through torchscript.py
---emit-testdata) instead of soda-opt's constant ones, and the result buffers starting at zero.
+--emit-testdata, or a TensorFlow model's own through scripts/tf_testdata.py) instead of soda-opt's constant ones, and the result buffers starting at zero.
 soda-opt's inputs are all 1.0, which hides whole classes of errors (swapped arguments, a transposed
 access). The memory bambu records after running it natively is the reference the Verilog is checked
-against, and scripts/check_golden.py compares it with PyTorch's result.
+against, and scripts/check_golden.py compares it with the framework's result.
 """
 import sys
 

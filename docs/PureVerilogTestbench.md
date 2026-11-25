@@ -160,6 +160,12 @@ strategy `<s>` (`baseline`; also `optimized` or `transformed` where the Makefile
 | `output/bambu-devpanda-tb/<s>/07_results.txt` | also simulates with Verilator (`<1\|0><TAB><cycles>`) |
 | `output/bambu-devpanda-tb/<s>/08_sst_results.txt` | runs the testbench under SST via verilator-sst (`<1\|0> <cycles>`) |
 
+`output/bambu-devpanda-tb/<s>/model.json` goes one step further: it compares the result with the
+framework's and describes the model for a model consumer (soda-sst-system's `docs/ModelFormat.md`). It
+needs `output/testdata.h`, the kernel's real inputs and the framework's results: `sb_cli`'s `bambu-tb`
+backend makes it for the PolyBench kernels (`torchscript.py --emit-testdata`), and EELS' Makefile for
+EELS (`scripts/tf_testdata.py`, with `make model`).
+
 The models and the PyTorch/TFLite/TensorFlow examples get them from
 [scripts/mkinc/model_devpanda_tb.mk](../scripts/mkinc/model_devpanda_tb.mk); the C example uses
 [c_to_verilog_devpanda_tb.mk](../scripts/mkinc/c_to_verilog_devpanda_tb.mk). Variables, on the

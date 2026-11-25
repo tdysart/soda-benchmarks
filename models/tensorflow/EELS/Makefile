@@ -1,6 +1,10 @@
 # Compile TensorFlow encoder model to protobuf and MLIR
 
 FILE_PATH=tfscript.py
+# the graph's input and output arrays: what tf-mlir-translate makes the kernel of, and what the
+# reference runs (only z_mean reaches the kernel)
+TF_INPUTS=x1
+TF_OUTPUTS=Identity
 TRANSFORM_PATH=transform.mlir
 SCRIPTS_DIR=../../../scripts
 ODIR=output
@@ -30,10 +34,10 @@ $(TFMLIR_TARGET): $(FROZEN_GRAPH_TARGET)
 	$(SCRIPTS_DIR)/check_docker.sh
 	$(DOCKER_RUN) tf-mlir-translate \
 	  --graphdef-to-mlir \
-	  --tf-input-arrays=x1 \
+	  --tf-input-arrays=$(TF_INPUTS) \
 	  --tf-input-data-types=DT_FLOAT \
 	  --tf-input-shapes=1,240,1 \
-	  --tf-output-arrays=Identity \
+	  --tf-output-arrays=$(TF_OUTPUTS) \
 	  $< \
 	  -o $@
 
@@ -72,11 +76,23 @@ BAMBU_MEMPOLICY=ALL_BRAM
 BAMBU_CLOCK_PERIOD=10
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog.mk
 
-# DPI-free testbench of bambu dev/panda, replayed under Verilator and SST. soda-opt's testbench
-# has no reference model of its own, so the IR compiled natively is the reference. Local tools
-# only; see scripts/mkinc/llvm_to_verilog_devpanda_tb.mk. Run it with
-#   make output/bambu-devpanda-tb/baseline/07_results.txt BAMBU_DEVICE=nangate45 BAMBU_MEMPOLICY=NO_BRAM
-# soda-opt writes the testbench while lowering the baseline, so the lowering is its recipe.
-SIMULATION_FILE_PATH=$(ODIR)/forward_kernel_testbench.c
-$(SIMULATION_FILE_PATH): $(ODIR)/04_llvm_baseline.mlir
+# DPI-free testbench of bambu dev/panda, replayed under Verilator and SST, on the kernel's own inputs
+# (init_inputs in tfscript.py): bambu runs the IR natively on them, and that result is checked against
+# what TensorFlow computes from them. Local tools only, with TensorFlow's Python first on PATH; see
+# scripts/mkinc/llvm_to_verilog_devpanda_tb.mk.
+#   make model      the model directory, output/bambu-devpanda-tb/baseline with model.json, for a
+#                   model consumer (soda-sst-system's docs/ModelFormat.md), with the bambu settings
+#                   soda-sst-system runs: nangate45, NO_BRAM, 5 ns
+$(ODIR)/testdata.h: $(FROZEN_GRAPH_TARGET) $(FILE_PATH) $(ODIR)/02_linalg.mlir $(SCRIPTS_DIR)/tf_testdata.py
+	python $(SCRIPTS_DIR)/tf_testdata.py $(FROZEN_GRAPH_TARGET) $(FILE_PATH) $@ --kernel eels \
+	  --inputs $(TF_INPUTS) --outputs $(TF_OUTPUTS) \
+	  --arg-order "$$($(SCRIPTS_DIR)/kernel_arg_order.sh $(ODIR)/02_linalg.mlir)"
+
+SIMULATION_FILE_PATH=$(ODIR)/bambu_testbench.c
 include $(SCRIPTS_DIR)/mkinc/llvm_to_verilog_devpanda_tb.mk
+
+model: BAMBU_DEVICE=nangate45
+model: BAMBU_MEMPOLICY=NO_BRAM
+model: BAMBU_CLOCK_PERIOD=5
+model: $(ODIR)/bambu-devpanda-tb/baseline/model.json
+.PHONY: model

@@ -10,7 +10,8 @@ the files it lists, and holds
 
   * the kernel's parameters in the order the kernel takes them, with their names, shapes, element
     type and place in @forward's signature (from testdata.h);
-  * the reference: PyTorch's results against what bambu's native run of the kernel left
+  * the reference: the framework's results (PyTorch, TensorFlow) against what bambu's native run of
+    the kernel left
     (scripts/check_golden.py). A consumer refuses a model whose reference did not pass;
   * the interface: the top module, the Verilog files, bambu's version and settings as bambu-log
     records them, and the testbench's files.
@@ -68,7 +69,7 @@ def main():
     top = opts.get("top-fname", "forward_kernel")
 
     n_in, n_out = len(td.inputs), len(td.golden)
-    out_names = ["out"] if n_out == 1 else [f"out{k}" for k in range(n_out)]
+    out_names = td.result_names
     parameters = []
     for kind, i in td.call:  # the kernel's own order: P0, P1, ...
         if kind == "in":
@@ -91,12 +92,12 @@ def main():
         "source": {
             "repository": "soda-benchmarks",
             "commit": source_commit(),
-            "framework": "pytorch",
+            "framework": td.framework,
             "dataset": td.dataset,
         },
         "parameters": parameters,
         "reference": {
-            "kind": "pytorch",
+            "kind": td.framework,
             "passed": ref["passed"],
             "largest_error": ref["largest_error"],
             "tolerance": ref["tolerance"],

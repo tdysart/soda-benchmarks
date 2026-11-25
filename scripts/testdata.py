@@ -1,7 +1,8 @@
-"""Reads the testdata.h that torchscript.py --emit-testdata writes (sb_cli experiments; the Makefile
-rule is in scripts/mkinc/ll_to_binary.mk): a kernel's inputs (PolyBench's init_array), the results
-PyTorch computes from them, the tolerance, the order the outlined forward_kernel takes its parameters
-in, and @forward's parameter names. With one result the buffers are td_out and td_golden, with
+"""Reads a testdata.h: a kernel's inputs, the results the framework computes from them, the tolerance,
+the order the outlined forward_kernel takes its parameters in, and the names of @forward's parameters
+and results. torchscript.py --emit-testdata writes it for a PyTorch kernel (sb_cli experiments; the
+Makefile rule is in scripts/mkinc/ll_to_binary.mk), with PolyBench's init_array as the inputs, and
+scripts/tf_testdata.py for a TensorFlow model (TD_FRAMEWORK "tensorflow"). With one result the buffers are td_out and td_golden, with
 several they are numbered (td_out0, td_golden0, ...)."""
 import re
 
@@ -51,6 +52,13 @@ class TestData:
         m = re.search(r'#define TD_PARAM_NAMES\s+"([^"]*)"', text)
         names = m.group(1).split() if m else []
         self.param_names = names if len(names) == len(self.inputs) else [f"p{i}" for i in range(len(self.inputs))]
+        # the framework that computed the results (headers without TD_FRAMEWORK are torchscript.py's)
+        m = re.search(r'#define TD_FRAMEWORK\s+"(\w+)"', text)
+        self.framework = m.group(1) if m else "pytorch"
+        # the results' names, where the framework has them (TD_RESULT_NAMES)
+        m = re.search(r'#define TD_RESULT_NAMES\s+"([^"]*)"', text)
+        names = m.group(1).split() if m else []
+        self.result_names = names if len(names) == nout else (["out"] if nout == 1 else [f"out{k}" for k in range(nout)])
 
     def call_arrays(self):
         """The kernel's arguments in the order forward_kernel takes them (results start at zero)."""

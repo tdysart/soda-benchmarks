@@ -67,6 +67,26 @@ def build_and_save_encoder():
         as_text=True
     )
 
+# The kernel's inputs for the check against TensorFlow (scripts/tf_testdata.py), as PolyBench's
+# init_array is for the PyTorch kernels: one synthetic spectrum the shape of INPUT_SHAPE, a decaying
+# background with an absorption edge and a peak on it, scaled to at most 1. Computed, not drawn at
+# random, so the testbench and the reference are the same run to run. Only z_mean reaches the kernel
+# (the Makefile's TF_OUTPUTS).
+DATASET = "synthetic"
+RESULT_NAMES = ["z_mean"]
+
+
+def init_inputs():
+    import numpy as np
+    n = params['INPUT_SHAPE'][0]
+    e = np.arange(n, dtype=np.float64)
+    background = (e + 20.0) ** -1.5
+    edge = np.where(e >= 80, 0.02 * np.exp(-(e - 80) / 60.0), 0.0)
+    peak = 0.015 * np.exp(-0.5 * ((e - 150) / 6.0) ** 2)
+    s = background + edge + peak
+    return [(s / s.max()).astype(np.float32).reshape((1,) + params['INPUT_SHAPE'])]
+
+
 def main():
     save_path = os.path.join(os.getcwd(), "output/model/eels_encoder/")
     if not os.path.exists(save_path) or not os.listdir(save_path):

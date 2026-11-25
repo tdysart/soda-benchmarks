@@ -72,6 +72,11 @@ For LLVM IR input there is no C to run, so:
   IR against PyTorch or TensorFlow. This is what the models and PolyBench kernels use, with
   soda-opt's generated `output/forward_kernel_testbench.c` as the driver.
 
+The PolyBench kernels (`sb_cli`'s `bambu-tb` backend) and the TensorFlow model EELS (`make model`) go
+one step further: their testbench runs on the kernel's real inputs (`scripts/gen_bambu_tb.py`), and
+`scripts/check_golden.py` compares the IR's native result with what the framework computes from the
+same inputs, recorded in the model directory's `model.json`.
+
 ## What had to be fixed to get here
 
 | Problem | Where | Fix |
