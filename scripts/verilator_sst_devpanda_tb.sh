@@ -103,18 +103,18 @@ mkdir -p "$WORK_DIR/verilog"
 cat "$SHIM" "$BAMBU_DIR/panda_libtech.v" "$BAMBU_DIR/$TOP_FNAME.v" "$TESTBENCH" \
   > "$WORK_DIR/verilog/sst_top.sv"
 
-# --timescale-override 1ps/1ps matches what bambu's own Verilator runs use; the
-# testbench's cycle counting assumes it (see V2023_XML_TESTBENCH.md in the verilator-sst
-# checkout). The defines select the DPI-free testbench and bambu's 64-bit pointers.
-cmake -S "$VERILATOR_SST_SRC" -B "$WORK_DIR/build" \
-  -DENABLE_CUSTOM_MODULE=ON \
+# The options for bambu's Verilog are shared with soda-sst-system's build of the kernel alone
+# (verilator_sst_options.sh). This build's own: the testbench is the top, BAMBU_TB_VERILOG
+# selects its DPI-free form, --x-initial fast is what bambu's own Verilator runs use (the testbench
+# does not finish with unique), and SST's clock link drives it.
+. "$SCRIPT_DIR/verilator_sst_options.sh"
+cmake -S "$VERILATOR_SST_SRC" -B "$WORK_DIR/build" "${VERILATOR_SST_CMAKE_OPTIONS[@]}" \
+  -DVERILATOR_OPTIONS="$BAMBU_VERILATOR_OPTIONS --x-initial fast +define+BAMBU_TB_VERILOG" \
   -DVERILOG_SOURCE_DIR="$WORK_DIR/verilog" \
   -DVERILOG_DEVICE="$VERILATOR_SST_DEVICE" \
   -DVERILOG_TOP=bambu_testbench \
   -DVERILOG_TOP_SOURCES=sst_top.sv \
-  -DVERILATOR_OPTIONS="-Wno-fatal -Wno-lint -sv --no-timing --timescale-override 1ps/1ps --x-assign fast --x-initial fast --noassert +define+BAMBU_TB_VERILOG +define+__M64 +define+__BAMBU_SIM__" \
   -DENABLE_LINK_HANDLING=ON \
-  -DCLOCK_PORT_NAME=clock \
   2>&1 | tee "$WORK_DIR/cmake-config.log"
 
 cmake --build "$WORK_DIR/build" -j "$(nproc 2>/dev/null || sysctl -n hw.ncpu)" \
